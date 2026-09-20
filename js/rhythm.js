@@ -1,55 +1,24 @@
-// Rhythm Coach: detects note onsets from the mic (a simple energy-flux
-// detector -- flag a frame as an onset when its RMS energy jumps well
-// above the recent rolling average, with a refractory period so one
-// strum doesn't fire twice) and scores each onset against the nearest
+// Rhythm Coach: uses the shared OnsetDetector (js/onset.js) to catch note
+// onsets from the mic, then scores each one against the nearest
 // metronome beat time to give live timing feedback.
 
 class RhythmCoach {
   constructor(audioCtx, analyser, metronome) {
     this.ctx = audioCtx;
-    this.analyser = analyser;
     this.metronome = metronome;
-    this.buf = new Float32Array(analyser.fftSize);
-    this.energyHistory = [];
-    this.lastOnsetTime = 0;
-    this.refractorySec = 0.15;
     this.hits = [];
-    this.running = false;
     this.onHit = null;
-    this._raf = null;
+    this._detector = new OnsetDetector(audioCtx, analyser);
+    this._detector.onOnset = (time) => this._registerOnset(time);
   }
 
   start() {
     this.hits = [];
-    this.energyHistory = [];
-    this.lastOnsetTime = 0;
-    this.running = true;
-    this._loop();
+    this._detector.start();
   }
 
   stop() {
-    this.running = false;
-    if (this._raf) cancelAnimationFrame(this._raf);
-  }
-
-  _loop() {
-    if (!this.running) return;
-    this.analyser.getFloatTimeDomainData(this.buf);
-    let sumSq = 0;
-    for (let i = 0; i < this.buf.length; i++) sumSq += this.buf[i] * this.buf[i];
-    const rms = Math.sqrt(sumSq / this.buf.length);
-    const now = this.ctx.currentTime;
-
-    this.energyHistory.push({ t: now, e: rms });
-    while (this.energyHistory.length && this.energyHistory[0].t < now - 1) this.energyHistory.shift();
-    const avg = this.energyHistory.reduce((s, x) => s + x.e, 0) / this.energyHistory.length;
-
-    if (rms > avg * 1.8 && rms > 0.02 && now - this.lastOnsetTime > this.refractorySec) {
-      this.lastOnsetTime = now;
-      this._registerOnset(now);
-    }
-
-    this._raf = requestAnimationFrame(() => this._loop());
+    this._detector.stop();
   }
 
   _registerOnset(time) {

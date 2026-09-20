@@ -73,13 +73,21 @@
 
   <section id="tab-play" class="tab-panel panel" role="tabpanel">
     <div class="transport">
-      <button id="playBtn" class="primary-btn" type="button">▶ Play</button>
+      <button id="playBtn" class="primary-btn" type="button">▶ Play (metronome)</button>
+      <button id="followBtn" class="primary-btn" type="button">🎤 Follow My Playing</button>
       <button id="stopBtn" class="secondary-btn" type="button">■ Stop</button>
       <label class="scroll-toggle">
         <input type="checkbox" id="autoScrollToggle" checked />
         Auto-scroll
       </label>
     </div>
+    <p id="followStatus" class="follow-status hidden"></p>
+    <p class="hint">
+      <strong>Play (metronome)</strong> scrolls at a fixed tempo whether or
+      not you keep up. <strong>Follow My Playing</strong> instead listens
+      for your strums and only advances each line once it's heard enough
+      of them &mdash; it follows your actual pace, not the tempo dial.
+    </p>
     <div id="songView" class="song-view">
       <p class="empty-hint">Load a song above to see the chart here.</p>
     </div>
@@ -128,7 +136,9 @@
 <script src="js/metronome.js"></script>
 <script src="js/tuner.js"></script>
 <script src="js/keydetect.js"></script>
+<script src="js/onset.js"></script>
 <script src="js/rhythm.js"></script>
+<script src="js/followscroll.js"></script>
 <script src="js/leadsheet-import.js"></script>
 <script src="js/app.js"></script>
 </body>

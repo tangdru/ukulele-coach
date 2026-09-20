@@ -25,10 +25,16 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
   chords — the defining 4th tone. This avoids the common mistake of reusing
   guitar chord shapes as-is, which can silently drop the root when it lived
   on the low E/A strings a baritone doesn't have.
-- **Scrolling view** — "Play" starts a Web-Audio-scheduled metronome at the
-  song's tempo and auto-scrolls/highlights the chart line by line in sync.
-  Tap any line to jump the playback position there. Auto-scroll can be
-  toggled off if you just want the beat and manual scrolling.
+- **Scrolling view, two ways** — **Play (metronome)** starts a Web-Audio-
+  scheduled metronome at the song's tempo and auto-scrolls/highlights the
+  chart line by line on that fixed clock, whether or not you're actually
+  keeping up. **Follow My Playing** instead listens through the mic (the
+  same onset/strum detection the Rhythm Coach uses) and only advances to
+  the next line once it's heard enough strums to match that line's beat
+  count — so the chart genuinely tracks your pace rather than assuming
+  you're locked to the tempo dial. Tap any line to jump there in either
+  mode; auto-scroll can be toggled off if you just want the beat/line
+  tracking without the page moving under you.
 - **Tuner** — continuous pitch detection (autocorrelation) with a note name,
   cents-off needle, and nearest-open-string hint (D3/G3/B3/E4). It picks up
   any clear pitch in range, not just a baritone uke specifically — a pitch
@@ -45,6 +51,15 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
   (energy-flux onset detection), scoring each one against the nearest beat
   (perfect / good / off / miss) with a running on-time % and average timing
   error.
+
+Follow My Playing's onset counting has the same practical limits as
+Rhythm Coach's: it's listening for a strum/pick attack loud and sharp
+enough to stand out from the recent average level, not specifically a
+baritone uke, so it can pick up other sharp sounds too, and a very soft
+or sustained strum might not register as a distinct onset. It assumes
+one detected onset per beat, which matches strumming a chord once per
+beat but not other rhythms (fingerpicking multiple notes per beat,
+sustained whole-line chords, etc.).
 
 ## What it deliberately doesn't do
 
@@ -113,20 +128,26 @@ reading PDF text, and [mammoth.js](https://github.com/mwilliamson/mammoth.js)
 
 ## Testing
 
-`smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`, and
-`smoke_test_tuner.mjs` are Playwright scripts (not part of the served app)
-that load the page in headless Chromium and click through song loading,
-chord diagrams, scrolling playback, the mic-gated tuner/rhythm-coach/
-key-detect flows (using Chromium's fake audio device), and PDF/Word lead
-sheet import. `smoke_test_tuner.mjs` goes a step further than "does it
-start without errors": it feeds the fake audio device a real synthesized
-tone (via `gen_test_tone.mjs`, a small dependency-free WAV writer) and
-asserts the tuner actually, correctly, stably identifies it with a smooth
-(non-jumpy) cents reading. Run a static server first, then:
+`smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
+`smoke_test_tuner.mjs`, and `smoke_test_follow.mjs` are Playwright scripts
+(not part of the served app) that load the page in headless Chromium and
+click through song loading, chord diagrams, scrolling playback, the
+mic-gated tuner/rhythm-coach/key-detect flows (using Chromium's fake audio
+device), and PDF/Word lead sheet import. Two of them go a step further
+than "does it start without errors", by feeding the fake audio device
+real synthesized audio and checking the *behavior* it should produce:
+`smoke_test_tuner.mjs` (via `gen_test_tone.mjs`, a small dependency-free
+WAV writer) asserts the tuner stably identifies a clean tone with a smooth
+cents reading; `smoke_test_follow.mjs` (via `gen_strum_wav.mjs`) feeds a
+set number of synthesized strum bursts at a tempo that a clock-based
+scroll couldn't possibly keep up with, and asserts Follow My Playing
+still lands on the correct line purely by counting them. Run a static
+server first, then:
 
 ```
 node smoke_test.mjs
 node smoke_test_mic.mjs
 node smoke_test_tuner.mjs
+node smoke_test_follow.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

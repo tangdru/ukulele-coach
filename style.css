@@ -137,8 +137,9 @@ button {
 .tab-panel { border-top-left-radius: 0; }
 
 /* Transport / song view */
-.transport { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.transport { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .scroll-toggle { color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+.follow-status { color: var(--accent); font-size: 0.85rem; margin: 4px 0 8px; font-weight: 600; }
 
 .song-view {
   max-height: 55vh;

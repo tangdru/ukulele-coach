@@ -9,6 +9,8 @@
   let tuner = null;
   let rhythmCoach = null;
   let keyDetector = null;
+  let followScroll = null;
+  let followActive = false;
 
   let flatLines = []; // { el, index } across the whole rendered song
   let scrollActive = false;
@@ -77,6 +79,7 @@
     $('timeSigDisplay').textContent = song.timeSig || '4/4';
     if (song.tempo) $('tempoInput').value = song.tempo;
     stopScroll();
+    stopFollow();
   }
 
   function renderSong(song) {
@@ -150,6 +153,7 @@
 
   function startScroll() {
     if (!flatLines.length) return;
+    stopFollow();
     ensureMetronome();
     const bpm = parseInt($('tempoInput').value, 10) || 90;
     const secondsPerLine = (beatsPerLine() * 60) / bpm;
@@ -209,11 +213,78 @@
       scrollStartTime = now - idx * secondsPerLine;
       lineStartTimes = flatLines.map((_, i) => scrollStartTime + i * secondsPerLine);
       activeLineIndex = idx - 1;
+    } else if (followActive) {
+      activeLineIndex = idx;
+      if (followScroll) followScroll.strumCount = 0;
+      updateFollowStatus(0, beatsPerLine());
     }
   }
 
+  // ---------- Follow My Playing (listens instead of running a clock) ----------
+
+  function updateFollowStatus(count, total) {
+    const el = $('followStatus');
+    el.classList.remove('hidden');
+    el.textContent = `🎧 Listening… ${count}/${total} beats heard on this line`;
+  }
+
+  async function startFollow() {
+    if (!flatLines.length) return;
+    stopScroll();
+    const ok = await ensureMic();
+    if (!ok) return;
+
+    followScroll = followScroll || new FollowScroll(audioCtx, analyser, beatsPerLine());
+    followScroll.setBeatsPerLine(beatsPerLine());
+    followScroll.onOnset = (count, total) => updateFollowStatus(count, total);
+    followScroll.onAdvance = advanceFollowLine;
+
+    flatLines.forEach((el) => el.classList.remove('active-line'));
+    activeLineIndex = 0;
+    if (flatLines[0]) flatLines[0].classList.add('active-line');
+    updateFollowStatus(0, beatsPerLine());
+
+    followScroll.start();
+    followActive = true;
+    $('followBtn').textContent = '⏹ Stop Following';
+  }
+
+  function advanceFollowLine() {
+    const nextIdx = activeLineIndex + 1;
+    if (nextIdx >= flatLines.length) {
+      stopFollow();
+      return;
+    }
+    if (flatLines[activeLineIndex]) flatLines[activeLineIndex].classList.remove('active-line');
+    activeLineIndex = nextIdx;
+    if (flatLines[activeLineIndex]) {
+      flatLines[activeLineIndex].classList.add('active-line');
+      if ($('autoScrollToggle').checked) {
+        flatLines[activeLineIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    followScroll.setBeatsPerLine(beatsPerLine());
+    updateFollowStatus(0, beatsPerLine());
+  }
+
+  function stopFollow() {
+    if (followScroll) followScroll.stop();
+    followActive = false;
+    $('followBtn').textContent = '🎤 Follow My Playing';
+    $('followStatus').classList.add('hidden');
+    flatLines.forEach((el) => el.classList.remove('active-line'));
+    activeLineIndex = -1;
+  }
+
   $('playBtn').addEventListener('click', startScroll);
-  $('stopBtn').addEventListener('click', stopScroll);
+  $('followBtn').addEventListener('click', () => {
+    if (followActive) stopFollow();
+    else startFollow();
+  });
+  $('stopBtn').addEventListener('click', () => {
+    stopScroll();
+    stopFollow();
+  });
 
   // ---------- Tap tempo ----------
 
@@ -249,6 +320,7 @@
         rhythmCoach.stop();
         $('rhythmToggleBtn').textContent = '🎤 Start Rhythm Coach';
       }
+      if (btn.dataset.tab !== 'play' && followActive) stopFollow();
     });
   });
 
