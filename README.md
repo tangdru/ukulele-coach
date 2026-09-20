@@ -4,7 +4,7 @@ A browser-based practice companion for baritone ukulele (tuned D G B E, the
 same as a guitar's top 4 strings). No build step, no framework, no account —
 open `index.html` (served, not `file://`, so the microphone works) and go.
 
-**Live (once merged to main):** `https://tangdru.github.io/familytree/ukulele/`
+**Live (once GitHub Pages is enabled for this repo):** `https://tangdru.github.io/ukulele-coach/`
 
 ## What it does
 
@@ -92,7 +92,6 @@ Needs a real HTTP server (mic access requires a secure context — `file://`
 won't work):
 
 ```
-cd ukulele
 python3 -m http.server 8000
 # open http://localhost:8000
 ```

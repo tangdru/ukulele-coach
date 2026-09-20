@@ -1,0 +1,9 @@
+{
+  "name": "ukulele-coach",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Baritone ukulele practice app: scrolling chord charts, tuner, key detection, rhythm coach.",
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}
