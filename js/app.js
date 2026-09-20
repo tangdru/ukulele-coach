@@ -19,6 +19,11 @@
   let scrollStartTime = 0;
   let activeLineIndex = -1;
 
+  const RATING_RANK = { perfect: 0, good: 1, off: 2, miss: 3 };
+  let lineOnsetCounts = []; // per-line: how many timing hits landed on it, so
+  // each new one maps to the next chord in that line
+  let lineWorstRating = []; // per-line: worst rating seen, for the border color
+
   const $ = (id) => document.getElementById(id);
 
   if (window.pdfjsLib) {
@@ -80,6 +85,7 @@
     if (song.tempo) $('tempoInput').value = song.tempo;
     stopScroll();
     stopFollow();
+    clearTimingMarks();
   }
 
   function renderSong(song) {
@@ -151,20 +157,77 @@
     return parseInt(sig[0], 10) || 4;
   }
 
-  function startScroll() {
+  async function startScroll() {
     if (!flatLines.length) return;
     stopFollow();
-    ensureMetronome();
+
+    const scoring = $('scoreTimingToggle').checked;
+    if (scoring) {
+      const ok = await ensureMic();
+      if (!ok) return;
+      clearTimingMarks();
+      rhythmCoach = rhythmCoach || new RhythmCoach(audioCtx, analyser, ensureMetronome());
+      rhythmCoach.onHit = handleTimingHit;
+      $('scoreLegend').classList.remove('hidden');
+    } else {
+      ensureMetronome();
+      if (rhythmCoach) rhythmCoach.stop();
+      $('scoreLegend').classList.add('hidden');
+    }
+
     const bpm = parseInt($('tempoInput').value, 10) || 90;
     const secondsPerLine = (beatsPerLine() * 60) / bpm;
 
     metronome.start(bpm, beatsPerLine());
+    if (scoring) rhythmCoach.start();
 
     scrollStartTime = audioCtx.currentTime + 0.1;
     lineStartTimes = flatLines.map((_, i) => scrollStartTime + i * secondsPerLine);
     activeLineIndex = -1;
     scrollActive = true;
     highlightLoop();
+  }
+
+  // Maps a timing hit's audio-clock timestamp to the line that was
+  // playing at that moment (lineStartTimes is ascending), marks that
+  // line with the worst rating seen on it, and maps onset order within
+  // the line to that line's chords in order, marking the specific chord
+  // that hit corresponds to.
+  function handleTimingHit(hit) {
+    let lineIdx = -1;
+    for (let i = 0; i < lineStartTimes.length; i++) {
+      if (lineStartTimes[i] <= hit.time) lineIdx = i;
+      else break;
+    }
+    const el = flatLines[lineIdx];
+    if (lineIdx < 0 || !el) return;
+
+    const prevRating = lineWorstRating[lineIdx];
+    if (!prevRating || RATING_RANK[hit.rating] > RATING_RANK[prevRating]) {
+      if (prevRating) el.classList.remove('rated-' + prevRating);
+      el.classList.add('rated-' + hit.rating);
+      lineWorstRating[lineIdx] = hit.rating;
+    }
+
+    const chordIdx = lineOnsetCounts[lineIdx] || 0;
+    lineOnsetCounts[lineIdx] = chordIdx + 1;
+    const chordEls = el.querySelectorAll('.chord-sym');
+    if (chordEls[chordIdx]) {
+      chordEls[chordIdx].classList.remove('rated-perfect', 'rated-good', 'rated-off', 'rated-miss');
+      chordEls[chordIdx].classList.add('rated-' + hit.rating);
+    }
+  }
+
+  function clearTimingMarks() {
+    flatLines.forEach((el) => {
+      el.classList.remove('rated-perfect', 'rated-good', 'rated-off', 'rated-miss');
+      el.querySelectorAll('.chord-sym').forEach((c) => {
+        c.classList.remove('rated-perfect', 'rated-good', 'rated-off', 'rated-miss');
+      });
+    });
+    lineOnsetCounts = new Array(flatLines.length).fill(0);
+    lineWorstRating = new Array(flatLines.length).fill(null);
+    $('scoreLegend').classList.add('hidden');
   }
 
   function highlightLoop() {
@@ -195,6 +258,10 @@
     scrollActive = false;
     if (scrollRafId) cancelAnimationFrame(scrollRafId);
     if (metronome) metronome.stop();
+    if (rhythmCoach) rhythmCoach.stop();
+    // Timing marks (rated-* classes) deliberately survive Stop, so you can
+    // review where the timing slipped after playing through -- only a
+    // fresh scored Play, or loading a new song, clears them.
     flatLines.forEach((el) => el.classList.remove('active-line'));
     activeLineIndex = -1;
   }
@@ -316,8 +383,13 @@
       $('tab-' + btn.dataset.tab).classList.remove('hidden');
 
       if (btn.dataset.tab !== 'tuner' && tuner) tuner.stop();
-      if (btn.dataset.tab !== 'rhythm' && rhythmCoach) {
+      // Only stop rhythmCoach here if it's the Rhythm Coach *tab's own*
+      // session (rhythmRunning) -- the same shared instance also serves
+      // "Score my timing" on the Play tab, which should keep listening
+      // if you switch tabs while scored playback is still going.
+      if (btn.dataset.tab !== 'rhythm' && rhythmRunning) {
         rhythmCoach.stop();
+        rhythmRunning = false;
         $('rhythmToggleBtn').textContent = '🎤 Start Rhythm Coach';
       }
       if (btn.dataset.tab !== 'play' && followActive) stopFollow();

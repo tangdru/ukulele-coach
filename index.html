@@ -80,13 +80,28 @@
         <input type="checkbox" id="autoScrollToggle" checked />
         Auto-scroll
       </label>
+      <label class="scroll-toggle">
+        <input type="checkbox" id="scoreTimingToggle" />
+        🎯 Score my timing (mic)
+      </label>
     </div>
     <p id="followStatus" class="follow-status hidden"></p>
+    <p id="scoreLegend" class="score-legend hidden">
+      Timing marks on the chart:
+      <span class="legend-swatch rating-perfect"></span>on time
+      <span class="legend-swatch rating-good"></span>close
+      <span class="legend-swatch rating-off"></span>off
+      <span class="legend-swatch rating-miss"></span>way off
+    </p>
     <p class="hint">
       <strong>Play (metronome)</strong> scrolls at a fixed tempo whether or
       not you keep up. <strong>Follow My Playing</strong> instead listens
       for your strums and only advances each line once it's heard enough
       of them &mdash; it follows your actual pace, not the tempo dial.
+      Check <strong>Score my timing</strong> with Play (metronome) to mark
+      each line, and the specific chord within it, with how close your
+      strums landed to the beat &mdash; so you can see exactly where the
+      timing slipped instead of just an average.
     </p>
     <div id="songView" class="song-view">
       <p class="empty-hint">Load a song above to see the chart here.</p>

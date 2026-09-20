@@ -164,12 +164,20 @@ button {
 
 .song-line {
   position: relative;
-  padding: 10px 6px 4px;
+  padding: 10px 6px 4px 10px;
   border-radius: 6px;
   cursor: pointer;
+  border-left: 3px solid transparent;
 }
 .song-line:hover { background: rgba(255,255,255,0.03); }
 .song-line.active-line { background: rgba(127, 216, 190, 0.12); }
+
+/* Timing marks from "Score my timing": the worst rating heard while this
+   line was active, so a problem spot stays visible after playing past it. */
+.song-line.rated-perfect { border-left-color: var(--accent-strong); }
+.song-line.rated-good { border-left-color: var(--accent); }
+.song-line.rated-off { border-left-color: var(--warn); }
+.song-line.rated-miss { border-left-color: var(--bad); }
 
 .chord-row {
   position: relative;
@@ -183,8 +191,35 @@ button {
   cursor: pointer;
   padding: 0 2px;
   border-radius: 4px;
+  box-shadow: 0 2px 0 0 transparent;
 }
 .chord-sym:hover { background: rgba(127, 216, 190, 0.2); }
+.chord-sym.rated-perfect { box-shadow: 0 2px 0 0 var(--accent-strong); }
+.chord-sym.rated-good { box-shadow: 0 2px 0 0 var(--accent); }
+.chord-sym.rated-off { box-shadow: 0 2px 0 0 var(--warn); }
+.chord-sym.rated-miss { box-shadow: 0 2px 0 0 var(--bad); }
+
+.score-legend {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 4px 0 8px;
+}
+.legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-left: 8px;
+  margin-right: 3px;
+}
+.legend-swatch.rating-perfect { background: var(--accent-strong); }
+.legend-swatch.rating-good { background: var(--accent); }
+.legend-swatch.rating-off { background: var(--warn); }
+.legend-swatch.rating-miss { background: var(--bad); }
 
 .lyric-row { white-space: pre; color: var(--text); }
 

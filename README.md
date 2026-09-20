@@ -51,6 +51,19 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
   (energy-flux onset detection), scoring each one against the nearest beat
   (perfect / good / off / miss) with a running on-time % and average timing
   error.
+- **Score my timing, on the chart itself** — check this box alongside
+  **Play (metronome)** and each timing hit gets mapped onto the actual
+  song: a colored left border on the line that was playing when it
+  happened (the worst rating heard on that line, so a rough spot doesn't
+  get overwritten by a later clean one), and a colored mark under the
+  specific chord that hit lines up with (matching onset order within the
+  line to chord order — so with one strum per chord, the mark lands on
+  the actual chord you were slow/early/on-time on). Marks stay on the
+  chart after Stop so you can look back over the whole run; a fresh
+  scored Play or loading a different song clears them. (Score my timing
+  needs a real clock to compare against, which is what Play (metronome)
+  provides — Follow My Playing has no fixed clock to score against, so
+  the two don't combine.)
 
 Follow My Playing's onset counting has the same practical limits as
 Rhythm Coach's: it's listening for a strum/pick attack loud and sharp
@@ -129,25 +142,29 @@ reading PDF text, and [mammoth.js](https://github.com/mwilliamson/mammoth.js)
 ## Testing
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
-`smoke_test_tuner.mjs`, and `smoke_test_follow.mjs` are Playwright scripts
-(not part of the served app) that load the page in headless Chromium and
-click through song loading, chord diagrams, scrolling playback, the
-mic-gated tuner/rhythm-coach/key-detect flows (using Chromium's fake audio
-device), and PDF/Word lead sheet import. Two of them go a step further
-than "does it start without errors", by feeding the fake audio device
-real synthesized audio and checking the *behavior* it should produce:
-`smoke_test_tuner.mjs` (via `gen_test_tone.mjs`, a small dependency-free
-WAV writer) asserts the tuner stably identifies a clean tone with a smooth
-cents reading; `smoke_test_follow.mjs` (via `gen_strum_wav.mjs`) feeds a
-set number of synthesized strum bursts at a tempo that a clock-based
-scroll couldn't possibly keep up with, and asserts Follow My Playing
-still lands on the correct line purely by counting them. Run a static
-server first, then:
+`smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, and `smoke_test_scoring.mjs`
+are Playwright scripts (not part of the served app) that load the page in
+headless Chromium and click through song loading, chord diagrams,
+scrolling playback, the mic-gated tuner/rhythm-coach/key-detect flows
+(using Chromium's fake audio device), and PDF/Word lead sheet import.
+Three of them go a step further than "does it start without errors", by
+feeding the fake audio device real synthesized audio and checking the
+*behavior* it should produce: `smoke_test_tuner.mjs` (via
+`gen_test_tone.mjs`, a small dependency-free WAV writer) asserts the
+tuner stably identifies a clean tone with a smooth cents reading;
+`smoke_test_follow.mjs` (via `gen_strum_wav.mjs`) feeds a set number of
+synthesized strum bursts at a tempo that a clock-based scroll couldn't
+possibly keep up with, and asserts Follow My Playing still lands on the
+correct line purely by counting them; `smoke_test_scoring.mjs` feeds
+strums during a scored Play and asserts real timing hits reach the DOM
+as rated-* marks on the correct line and chord, that they survive Stop,
+and that a new song load clears them. Run a static server first, then:
 
 ```
 node smoke_test.mjs
 node smoke_test_mic.mjs
 node smoke_test_tuner.mjs
 node smoke_test_follow.mjs
+node smoke_test_scoring.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```
