@@ -11,6 +11,7 @@
   let keyDetector = null;
   let followScroll = null;
   let followActive = false;
+  let analyzeActive = false;
 
   let flatLines = []; // { el, index } across the whole rendered song
   let scrollActive = false;
@@ -64,13 +65,13 @@
 
   // ---------- Song loading & rendering ----------
 
-  function populateDemoSongs() {
-    const select = $('demoSongSelect');
-    Object.keys(DEMO_SONGS).forEach((title) => {
+  function populateSongDatalist() {
+    const list = $('songDatalist');
+    list.innerHTML = '';
+    Object.keys(allAvailableSongs()).forEach((title) => {
       const opt = document.createElement('option');
       opt.value = title;
-      opt.textContent = title;
-      select.appendChild(opt);
+      list.appendChild(opt);
     });
   }
 
@@ -79,13 +80,19 @@
     currentSong = song;
     renderSong(song);
     $('songTitle').textContent = song.title || 'Untitled';
-    $('songArtist').textContent = song.artist || '';
+    $('songTitle').title = [song.title, song.artist].filter(Boolean).join(' — ');
     $('keyDisplay').textContent = song.key || '—';
     $('timeSigDisplay').textContent = song.timeSig || '4/4';
     if (song.tempo) $('tempoInput').value = song.tempo;
     stopScroll();
     stopFollow();
     clearTimingMarks();
+
+    if (song.title) {
+      saveSongToLibrary(song.title, chordproText);
+      populateSongDatalist();
+    }
+    closeUploadPanel();
   }
 
   function renderSong(song) {
@@ -110,7 +117,7 @@
         chordRow.className = 'chord-row';
         const lyricRow = document.createElement('div');
         lyricRow.className = 'lyric-row';
-        lyricRow.textContent = line.text || ' ';
+        lyricRow.textContent = line.text || ' ';
 
         line.chords.forEach((c) => {
           const span = document.createElement('span');
@@ -120,7 +127,7 @@
           span.addEventListener('click', () => showChordDiagram(c.sym));
           chordRow.appendChild(span);
         });
-        if (!line.chords.length) chordRow.innerHTML = ' ';
+        if (!line.chords.length) chordRow.innerHTML = ' ';
 
         lineEl.appendChild(chordRow);
         lineEl.appendChild(lyricRow);
@@ -150,41 +157,52 @@
     }
   });
 
-  // ---------- Auto-scroll playback ----------
+  // ---------- Play modes: Metronome / Follow Me / Analyze Me ----------
 
   function beatsPerLine() {
     const sig = ($('timeSigDisplay').textContent || '4/4').split('/');
     return parseInt(sig[0], 10) || 4;
   }
 
-  async function startScroll() {
+  function setActiveMode(mode) {
+    $('modeMetronomeBtn').classList.toggle('active', mode === 'metronome');
+    $('modeFollowBtn').classList.toggle('active', mode === 'follow');
+    $('modeAnalyzeBtn').classList.toggle('active', mode === 'analyze');
+  }
+
+  async function startScroll(scoring) {
     if (!flatLines.length) return;
     stopFollow();
 
-    const scoring = $('scoreTimingToggle').checked;
     if (scoring) {
       const ok = await ensureMic();
       if (!ok) return;
       clearTimingMarks();
       rhythmCoach = rhythmCoach || new RhythmCoach(audioCtx, analyser, ensureMetronome());
       rhythmCoach.onHit = handleTimingHit;
-      $('scoreLegend').classList.remove('hidden');
+      $('analyzeStats').classList.remove('hidden');
+      analyzeActive = true;
     } else {
       ensureMetronome();
       if (rhythmCoach) rhythmCoach.stop();
-      $('scoreLegend').classList.add('hidden');
+      $('analyzeStats').classList.add('hidden');
+      analyzeActive = false;
     }
 
     const bpm = parseInt($('tempoInput').value, 10) || 90;
     const secondsPerLine = (beatsPerLine() * 60) / bpm;
 
     metronome.start(bpm, beatsPerLine());
-    if (scoring) rhythmCoach.start();
+    if (scoring) {
+      rhythmCoach.start();
+      rhythmStatsLoop();
+    }
 
     scrollStartTime = audioCtx.currentTime + 0.1;
     lineStartTimes = flatLines.map((_, i) => scrollStartTime + i * secondsPerLine);
     activeLineIndex = -1;
     scrollActive = true;
+    setActiveMode(scoring ? 'analyze' : 'metronome');
     highlightLoop();
   }
 
@@ -227,7 +245,16 @@
     });
     lineOnsetCounts = new Array(flatLines.length).fill(0);
     lineWorstRating = new Array(flatLines.length).fill(null);
-    $('scoreLegend').classList.add('hidden');
+    $('analyzeStats').classList.add('hidden');
+  }
+
+  function rhythmStatsLoop() {
+    if (!analyzeActive) return;
+    const stats = rhythmCoach.stats();
+    $('statOnTime').textContent = stats.count ? Math.round(stats.onTimePct) + '%' : '—';
+    $('statAvgMs').textContent = stats.count ? Math.round(stats.avgAbsMs) + ' ms' : '—';
+    $('statCount').textContent = String(rhythmCoach.hits.length);
+    setTimeout(rhythmStatsLoop, 400);
   }
 
   function highlightLoop() {
@@ -256,6 +283,7 @@
 
   function stopScroll() {
     scrollActive = false;
+    analyzeActive = false;
     if (scrollRafId) cancelAnimationFrame(scrollRafId);
     if (metronome) metronome.stop();
     if (rhythmCoach) rhythmCoach.stop();
@@ -264,6 +292,7 @@
     // fresh scored Play, or loading a new song, clears them.
     flatLines.forEach((el) => el.classList.remove('active-line'));
     activeLineIndex = -1;
+    setActiveMode(null);
   }
 
   function jumpToLine(idx) {
@@ -313,7 +342,7 @@
 
     followScroll.start();
     followActive = true;
-    $('followBtn').textContent = '⏹ Stop Following';
+    setActiveMode('follow');
   }
 
   function advanceFollowLine() {
@@ -337,17 +366,15 @@
   function stopFollow() {
     if (followScroll) followScroll.stop();
     followActive = false;
-    $('followBtn').textContent = '🎤 Follow My Playing';
     $('followStatus').classList.add('hidden');
     flatLines.forEach((el) => el.classList.remove('active-line'));
     activeLineIndex = -1;
+    setActiveMode(null);
   }
 
-  $('playBtn').addEventListener('click', startScroll);
-  $('followBtn').addEventListener('click', () => {
-    if (followActive) stopFollow();
-    else startFollow();
-  });
+  $('modeMetronomeBtn').addEventListener('click', () => startScroll(false));
+  $('modeFollowBtn').addEventListener('click', startFollow);
+  $('modeAnalyzeBtn').addEventListener('click', () => startScroll(true));
   $('stopBtn').addEventListener('click', () => {
     stopScroll();
     stopFollow();
@@ -369,31 +396,36 @@
     }
   });
 
-  // ---------- Tabs ----------
+  // ---------- Rail navigation (Upload / Play / Tuner) ----------
 
-  document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach((b) => {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-      document.querySelectorAll('.tab-panel').forEach((p) => p.classList.add('hidden'));
-      $('tab-' + btn.dataset.tab).classList.remove('hidden');
-
-      if (btn.dataset.tab !== 'tuner' && tuner) tuner.stop();
-      // Only stop rhythmCoach here if it's the Rhythm Coach *tab's own*
-      // session (rhythmRunning) -- the same shared instance also serves
-      // "Score my timing" on the Play tab, which should keep listening
-      // if you switch tabs while scored playback is still going.
-      if (btn.dataset.tab !== 'rhythm' && rhythmRunning) {
-        rhythmCoach.stop();
-        rhythmRunning = false;
-        $('rhythmToggleBtn').textContent = '🎤 Start Rhythm Coach';
-      }
-      if (btn.dataset.tab !== 'play' && followActive) stopFollow();
+  function switchView(viewName) {
+    document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
+    $('view-' + viewName).classList.remove('hidden');
+    document.querySelectorAll('.rail-btn[data-view]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.view === viewName);
     });
+
+    if (viewName !== 'tuner' && tuner) tuner.stop();
+    if (viewName !== 'play') {
+      stopScroll();
+      stopFollow();
+    }
+  }
+
+  $('railPlay').addEventListener('click', () => switchView('play'));
+  $('railTuner').addEventListener('click', () => switchView('tuner'));
+
+  function openUploadPanel() {
+    $('uploadPanel').classList.remove('hidden');
+    $('songSearch').focus();
+  }
+  function closeUploadPanel() {
+    $('uploadPanel').classList.add('hidden');
+  }
+  $('railUpload').addEventListener('click', openUploadPanel);
+  $('closeUploadBtn').addEventListener('click', closeUploadPanel);
+  $('uploadPanel').addEventListener('click', (e) => {
+    if (e.target.classList.contains('sheet-modal-backdrop')) closeUploadPanel();
   });
 
   // ---------- Tuner ----------
@@ -437,12 +469,13 @@
     keyDetector = keyDetector || new KeyDetector(audioCtx, analyser);
     const btn = $('detectKeyBtn');
     btn.disabled = true;
+    const originalLabel = btn.textContent;
     keyDetector.onProgress = (frac) => {
-      btn.textContent = `Listening… ${Math.round(frac * 100)}%`;
+      btn.textContent = `${Math.round(frac * 100)}%`;
     };
     const result = await keyDetector.start(6);
     btn.disabled = false;
-    btn.textContent = 'Detect from mic';
+    btn.textContent = originalLabel;
     if (result) {
       $('keyDisplay').textContent = result.key;
       if (currentSong) currentSong.key = result.key;
@@ -451,53 +484,22 @@
     }
   });
 
-  // ---------- Rhythm coach ----------
-
-  let rhythmRunning = false;
-  $('rhythmToggleBtn').addEventListener('click', async () => {
-    if (rhythmRunning) {
-      rhythmCoach.stop();
-      ensureMetronome().stop();
-      rhythmRunning = false;
-      $('rhythmToggleBtn').textContent = '🎤 Start Rhythm Coach';
-      return;
-    }
-    const ok = await ensureMic();
-    if (!ok) return;
-    const bpm = parseInt($('tempoInput').value, 10) || 90;
-    metronome.start(bpm, beatsPerLine());
-    rhythmCoach = rhythmCoach || new RhythmCoach(audioCtx, analyser, metronome);
-    rhythmCoach.onHit = renderBeatHit;
-    rhythmCoach.start();
-    rhythmRunning = true;
-    $('rhythmToggleBtn').textContent = '⏹ Stop Rhythm Coach';
-    rhythmStatsLoop();
-  });
-
-  function renderBeatHit(hit) {
-    const track = $('beatTrack');
-    const dot = document.createElement('span');
-    dot.className = 'beat-dot rating-' + hit.rating;
-    dot.title = `${Math.round(hit.deltaMs)} ms`;
-    track.appendChild(dot);
-    while (track.children.length > 40) track.removeChild(track.firstChild);
-    track.scrollLeft = track.scrollWidth;
-  }
-
-  function rhythmStatsLoop() {
-    if (!rhythmRunning) return;
-    const stats = rhythmCoach.stats();
-    $('statOnTime').textContent = stats.count ? Math.round(stats.onTimePct) + '%' : '—';
-    $('statAvgMs').textContent = stats.count ? Math.round(stats.avgAbsMs) + ' ms' : '—';
-    $('statCount').textContent = String(rhythmCoach.hits.length);
-    setTimeout(rhythmStatsLoop, 400);
-  }
-
   // ---------- Loading UI ----------
 
-  $('demoSongSelect').addEventListener('change', (e) => {
-    const title = e.target.value;
-    if (title && DEMO_SONGS[title]) loadSong(DEMO_SONGS[title]);
+  function loadByTitle(title) {
+    const songs = allAvailableSongs();
+    if (songs[title]) {
+      loadSong(songs[title]);
+      return true;
+    }
+    return false;
+  }
+
+  $('songSearch').addEventListener('change', (e) => {
+    if (loadByTitle(e.target.value.trim())) e.target.value = '';
+  });
+  $('songSearch').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && loadByTitle(e.target.value.trim())) e.target.value = '';
   });
 
   $('togglePasteBtn').addEventListener('click', () => {
@@ -506,7 +508,12 @@
 
   $('loadPastedBtn').addEventListener('click', () => {
     const text = $('pasteText').value.trim();
-    if (text) loadSong(text);
+    if (text) {
+      loadSong(text);
+      $('pasteText').value = '';
+      $('pasteArea').classList.add('hidden');
+      setImportStatus('');
+    }
   });
 
   function setImportStatus(msg) {
@@ -531,9 +538,7 @@
         const converted = await importLeadSheetFile(file);
         $('pasteText').value = converted;
         $('pasteArea').classList.remove('hidden');
-        $('pasteAreaHint').textContent =
-          `Converted from ${file.name} — chord placement is a best-effort guess, so check it over (and fill in Key/Tempo above) before Load.`;
-        setImportStatus('');
+        setImportStatus(`Converted from ${file.name} — review before Load (placement is best-effort).`);
         $('pasteText').focus();
       } catch (err) {
         setImportStatus('');
@@ -549,5 +554,5 @@
     e.target.value = '';
   });
 
-  populateDemoSongs();
+  populateSongDatalist();
 })();

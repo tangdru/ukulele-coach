@@ -6,12 +6,28 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
 
 **Live:** `https://tangdru.github.io/ukulele-coach/`
 
+## Layout
+
+The screen is the chart — nothing else competes for space. A thin top bar
+carries song title / key / tempo; a bottom icon rail (**Upload**,
+**Play**, **Tuner**) is the only navigation. Tapping **Upload** opens a
+sheet over the chart to load a song; it closes itself the moment a song
+loads. There's no standing explainer text in the UI by design — the
+paragraphs below are the explanations, kept in this README instead of on
+screen.
+
 ## What it does
 
 - **Song chart** — paste or upload a [ChordPro](https://www.chordpro.org/chordpro/chordpro-introduction/)-style
-  chord chart, upload a PDF or Word (.docx) lead sheet, or pick one of two
-  bundled demo songs (Amazing Grace, You Are My Sunshine). Chords render
-  above the lyrics; tap any chord to see its fingering.
+  chord chart, upload a PDF or Word (.docx) lead sheet, or search/pick a
+  previously loaded song (see Song library below). Chords render above
+  the lyrics; tap any chord to see its fingering.
+- **Song library** — every song you paste or upload gets saved to the
+  browser's local storage under its title, so next time it's just a
+  search-and-select in the Upload sheet instead of uploading or pasting
+  again. The search box is a native `<input list>` / `<datalist>` combo:
+  type to filter, matching both the two bundled demos and everything
+  you've saved.
 - **PDF/Word lead sheet import** — reconstructs the chord-above-lyric
   layout from the file's text positions (PDF) or paragraph order (Word),
   detects lines that are made up entirely of chord symbols, and merges
@@ -25,16 +41,30 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
   chords — the defining 4th tone. This avoids the common mistake of reusing
   guitar chord shapes as-is, which can silently drop the root when it lived
   on the low E/A strings a baritone doesn't have.
-- **Scrolling view, two ways** — **Play (metronome)** starts a Web-Audio-
-  scheduled metronome at the song's tempo and auto-scrolls/highlights the
-  chart line by line on that fixed clock, whether or not you're actually
-  keeping up. **Follow My Playing** instead listens through the mic (the
-  same onset/strum detection the Rhythm Coach uses) and only advances to
-  the next line once it's heard enough strums to match that line's beat
-  count — so the chart genuinely tracks your pace rather than assuming
-  you're locked to the tempo dial. Tap any line to jump there in either
-  mode; auto-scroll can be toggled off if you just want the beat/line
-  tracking without the page moving under you.
+- **Three equal-weight play modes** (Play view, above the chart):
+  - **▶ Metronome** — a Web-Audio-scheduled metronome at the song's tempo,
+    auto-scrolling/highlighting the chart line by line on that fixed
+    clock, whether or not you're actually keeping up.
+  - **🎤 Follow Me** — listens through the mic (onset/strum detection) and
+    only advances to the next line once it's heard enough strums to match
+    that line's beat count, so the chart genuinely tracks your pace
+    instead of assuming you're locked to the tempo dial.
+  - **🎯 Analyze Me** — runs the metronome (needed as the timing reference)
+    *and* listens, scoring each strum against the nearest beat and
+    marking it directly on the chart: a colored left border on the line
+    that was playing (the worst rating heard on it, so a rough spot isn't
+    overwritten by a later clean hit) and a colored mark under the
+    specific chord that strum lines up with (matching strum order to
+    chord order within the line). A compact on-time% / avg-ms-off / strum
+    count row tracks the running session. Marks stay on the chart after
+    Stop so you can review the whole run; a fresh Analyze Me run or a new
+    song load clears them.
+
+  Tap any line to jump there in any mode; auto-scroll can be toggled off
+  if you just want the beat/line tracking without the page moving under
+  you. Follow Me and Analyze Me don't combine — Analyze Me needs the
+  metronome's fixed clock to score against, which is exactly what Follow
+  Me deliberately doesn't run.
 - **Tuner** — continuous pitch detection (autocorrelation) with a note name,
   cents-off needle, and nearest-open-string hint (D3/G3/B3/E4). It picks up
   any clear pitch in range, not just a baritone uke specifically — a pitch
@@ -44,35 +74,18 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
   toward each new reading rather than jumping straight to it, snapping
   instantly on an actual note change) so the needle settles instead of
   jittering frame-to-frame.
-- **Key** — read from the chart's `{key: ...}` directive, or tap "Detect
-  from mic" to listen for 6 seconds and estimate the key via a chroma
-  histogram + Krumhansl-Schmuckler key-profile correlation.
-- **Rhythm Coach** — starts the metronome and listens for your strums
-  (energy-flux onset detection), scoring each one against the nearest beat
-  (perfect / good / off / miss) with a running on-time % and average timing
-  error.
-- **Score my timing, on the chart itself** — check this box alongside
-  **Play (metronome)** and each timing hit gets mapped onto the actual
-  song: a colored left border on the line that was playing when it
-  happened (the worst rating heard on that line, so a rough spot doesn't
-  get overwritten by a later clean one), and a colored mark under the
-  specific chord that hit lines up with (matching onset order within the
-  line to chord order — so with one strum per chord, the mark lands on
-  the actual chord you were slow/early/on-time on). Marks stay on the
-  chart after Stop so you can look back over the whole run; a fresh
-  scored Play or loading a different song clears them. (Score my timing
-  needs a real clock to compare against, which is what Play (metronome)
-  provides — Follow My Playing has no fixed clock to score against, so
-  the two don't combine.)
+- **Key** — read from the chart's `{key: ...}` directive, or tap the 🔑
+  icon in the top bar to listen for 6 seconds and estimate the key via a
+  chroma histogram + Krumhansl-Schmuckler key-profile correlation.
 
-Follow My Playing's onset counting has the same practical limits as
-Rhythm Coach's: it's listening for a strum/pick attack loud and sharp
-enough to stand out from the recent average level, not specifically a
-baritone uke, so it can pick up other sharp sounds too, and a very soft
-or sustained strum might not register as a distinct onset. It assumes
-one detected onset per beat, which matches strumming a chord once per
-beat but not other rhythms (fingerpicking multiple notes per beat,
-sustained whole-line chords, etc.).
+Follow Me's and Analyze Me's onset counting have the same practical
+limits: they're listening for a strum/pick attack loud and sharp enough
+to stand out from the recent average level, not specifically a baritone
+uke, so they can pick up other sharp sounds too, and a very soft or
+sustained strum might not register as a distinct onset. Both assume one
+detected onset per beat, which matches strumming a chord once per beat
+but not other rhythms (fingerpicking multiple notes per beat, sustained
+whole-line chords, etc.).
 
 ## What it deliberately doesn't do
 
@@ -142,23 +155,25 @@ reading PDF text, and [mammoth.js](https://github.com/mwilliamson/mammoth.js)
 ## Testing
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
-`smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, and `smoke_test_scoring.mjs`
-are Playwright scripts (not part of the served app) that load the page in
-headless Chromium and click through song loading, chord diagrams,
-scrolling playback, the mic-gated tuner/rhythm-coach/key-detect flows
-(using Chromium's fake audio device), and PDF/Word lead sheet import.
-Three of them go a step further than "does it start without errors", by
-feeding the fake audio device real synthesized audio and checking the
-*behavior* it should produce: `smoke_test_tuner.mjs` (via
-`gen_test_tone.mjs`, a small dependency-free WAV writer) asserts the
-tuner stably identifies a clean tone with a smooth cents reading;
-`smoke_test_follow.mjs` (via `gen_strum_wav.mjs`) feeds a set number of
+`smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
+and `smoke_test_library.mjs` are Playwright scripts (not part of the
+served app) that load the page in headless Chromium and click through
+song loading, the rail/upload-sheet navigation, chord diagrams, all three
+play modes, and PDF/Word lead sheet import. Several go a step further
+than "does it start without errors", by checking the actual *behavior*:
+`smoke_test_tuner.mjs` (via `gen_test_tone.mjs`, a small dependency-free
+WAV writer) feeds a real synthesized tone through Chromium's fake audio
+device and asserts the tuner stably identifies it with a smooth cents
+reading; `smoke_test_follow.mjs` (via `gen_strum_wav.mjs`) feeds
 synthesized strum bursts at a tempo that a clock-based scroll couldn't
-possibly keep up with, and asserts Follow My Playing still lands on the
-correct line purely by counting them; `smoke_test_scoring.mjs` feeds
-strums during a scored Play and asserts real timing hits reach the DOM
-as rated-* marks on the correct line and chord, that they survive Stop,
-and that a new song load clears them. Run a static server first, then:
+possibly keep up with, and asserts Follow Me still lands on the correct
+line purely by counting them; `smoke_test_scoring.mjs` feeds strums
+during Analyze Me and asserts real timing hits reach the DOM as rated-*
+marks on the correct line and chord, that they survive Stop, and that a
+new song load clears them; `smoke_test_library.mjs` pastes a song, does a
+real full page reload (not just in-page navigation), and asserts the
+song is still there in the search list and loadable by name. Run a
+static server first, then:
 
 ```
 node smoke_test.mjs
@@ -166,5 +181,6 @@ node smoke_test_mic.mjs
 node smoke_test_tuner.mjs
 node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
+node smoke_test_library.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

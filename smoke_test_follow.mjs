@@ -28,18 +28,20 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
 await page.goto('http://127.0.0.1:8934/index.html');
-await page.selectOption('#demoSongSelect', 'Amazing Grace'); // 3/4 time, 8 lines
+await page.click('#railUpload');
+await page.fill('#songSearch', 'Amazing Grace'); // 3/4 time, 8 lines
+await page.keyboard.press('Enter');
 await page.waitForTimeout(200);
 
 // A deliberately slow tempo: if Follow mode were secretly still just a
 // clock, waiting this long wouldn't get anywhere near line 3.
 await page.fill('#tempoInput', '20');
 
-await page.click('#followBtn');
+await page.click('#modeFollowBtn');
 await page.waitForTimeout(300);
-const btnTextAfterStart = await page.textContent('#followBtn');
-console.log('button after start:', btnTextAfterStart);
-if (!btnTextAfterStart.includes('Stop Following')) throw new Error('Follow mode did not start');
+const followActive = await page.locator('#modeFollowBtn').evaluate((el) => el.classList.contains('active'));
+console.log('follow mode active after start:', followActive);
+if (!followActive) throw new Error('Follow mode did not start');
 
 const line0Active = await page.locator('.song-line').nth(0).evaluate((el) => el.classList.contains('active-line'));
 console.log('line 0 active at start:', line0Active);

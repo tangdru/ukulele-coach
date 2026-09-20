@@ -1,10 +1,9 @@
-// Verifies "Score my timing" actually marks the chart: turning it on
-// with Play (metronome), feeding synthesized strums through the fake
-// audio device, and checking that both a song-line and a specific chord
-// symbol end up with a rated-* class -- not just that the checkbox/UI
-// exists, but that a real timing hit reaches the DOM. Also checks marks
-// persist through Stop (for post-play review) and clear on a fresh
-// scored Play / new song load.
+// Verifies "Analyze Me" actually marks the chart: starting it, feeding
+// synthesized strums through the fake audio device, and checking that
+// both a song-line and a specific chord symbol end up with a rated-*
+// class -- not just that the UI exists, but that a real timing hit
+// reaches the DOM. Also checks marks persist through Stop (for post-play
+// review) and clear on a fresh Analyze Me run / new song load.
 import { chromium } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -29,16 +28,18 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
 await page.goto('http://127.0.0.1:8934/index.html');
-await page.selectOption('#demoSongSelect', 'You Are My Sunshine'); // 4/4 time
+await page.click('#railUpload');
+await page.fill('#songSearch', 'You Are My Sunshine'); // 4/4 time
+await page.keyboard.press('Enter');
 await page.waitForTimeout(200);
 await page.fill('#tempoInput', '60');
-await page.check('#scoreTimingToggle');
-await page.click('#playBtn');
+await page.click('#modeAnalyzeBtn');
 await page.waitForTimeout(200);
 
-const legendVisible = await page.locator('#scoreLegend').isVisible();
-console.log('legend visible after starting scored play:', legendVisible);
-if (!legendVisible) throw new Error('score legend did not appear');
+const statsVisible = await page.locator('#analyzeStats').isVisible();
+const analyzeActive = await page.locator('#modeAnalyzeBtn').evaluate((el) => el.classList.contains('active'));
+console.log('analyze stats visible after starting Analyze Me:', statsVisible, '| button active:', analyzeActive);
+if (!statsVisible || !analyzeActive) throw new Error('Analyze Me did not start correctly');
 
 await page.waitForTimeout(9500); // let ~9 strums land
 
@@ -56,7 +57,9 @@ console.log('rated lines after Stop:', ratedAfterStop);
 if (ratedAfterStop !== ratedLineCount) throw new Error('Timing marks should persist through Stop for review');
 
 // A fresh song load should clear the marks.
-await page.selectOption('#demoSongSelect', 'Amazing Grace');
+await page.click('#railUpload');
+await page.fill('#songSearch', 'Amazing Grace');
+await page.keyboard.press('Enter');
 await page.waitForTimeout(200);
 const ratedAfterNewSong = await page.locator('.song-line[class*="rated-"]').count();
 console.log('rated lines after loading a new song:', ratedAfterNewSong);

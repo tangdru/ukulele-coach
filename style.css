@@ -13,71 +13,17 @@
 
 * { box-sizing: border-box; }
 
+html, body { height: 100%; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.4;
-}
-
-.app-header {
-  padding: 20px 16px 8px;
-  text-align: center;
-}
-.app-header h1 { margin: 0 0 4px; font-size: 1.6rem; }
-.tagline { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
-
-.app-main {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 12px 16px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius);
-  padding: 14px;
+  overflow: hidden;
 }
 
 .hidden { display: none !important; }
-
-.hint { color: var(--text-dim); font-size: 0.82rem; margin: 8px 0 0; }
-.hint a { color: var(--accent); }
-
-/* Song loader */
-.song-loader-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-.song-loader-row label { font-size: 0.85rem; color: var(--text-dim); }
-.song-loader-row select, .song-loader-row input[type=file] {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 0.85rem;
-}
-.file-label { margin-left: 4px; }
-
-.paste-area { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-.paste-area textarea {
-  width: 100%;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
-  padding: 8px;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  font-size: 0.85rem;
-}
 
 button {
   cursor: pointer;
@@ -98,51 +44,122 @@ button {
   color: var(--text);
 }
 .secondary-btn:hover { border-color: var(--accent); color: var(--accent); }
-.small-btn { padding: 4px 9px; font-size: 0.75rem; }
 
-/* Song meta */
-.song-meta {
+/* App shell: fixed-height column so the chart gets all the leftover space */
+#app {
   display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  max-width: 760px;
+  margin: 0 auto;
 }
-.meta-block { display: flex; align-items: center; gap: 6px; }
-.song-title { font-size: 1.1rem; font-weight: 600; }
-.song-artist { color: var(--text-dim); font-size: 0.85rem; }
-.meta-label { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.meta-value { font-weight: 600; color: var(--accent); }
-#tempoInput {
-  width: 64px;
+
+/* Compact top bar */
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.song-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 40px;
+}
+.meta-chip {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+}
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1rem;
+  padding: 4px 6px;
+  flex: 0 0 auto;
+}
+.icon-btn:hover { color: var(--accent); }
+.tempo-chip {
+  width: 52px;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  padding: 5px 6px;
+  padding: 4px 6px;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
 }
-.unit { color: var(--text-dim); font-size: 0.78rem; }
 
-/* Tabs */
-.tabs { display: flex; gap: 6px; }
-.tab-btn {
-  flex: 1;
+/* Main content: whichever view is active fills all remaining height */
+.main-view {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.view {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+}
+
+/* Play view */
+.play-modes {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.mode-btn {
+  flex: 1 1 auto;
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  color: var(--text-dim);
-  border-radius: var(--radius) var(--radius) 0 0;
-  padding: 10px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 8px 6px;
+  white-space: nowrap;
 }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--panel); background: var(--panel); font-weight: 600; }
+.mode-btn.active { background: var(--accent-strong); color: #062018; border-color: var(--accent-strong); font-weight: 600; }
+.mode-btn.stop-btn { flex: 0 0 auto; }
+.scroll-toggle {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
 
-.tab-panel { border-top-left-radius: 0; }
-
-/* Transport / song view */
-.transport { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.scroll-toggle { color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
-.follow-status { color: var(--accent); font-size: 0.85rem; margin: 4px 0 8px; font-weight: 600; }
+.status-line {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.rhythm-stats { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-value { display: block; font-size: 1rem; font-weight: 700; color: var(--accent); }
+.stat-label { color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; }
 
 .song-view {
-  max-height: 55vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   font-family: ui-monospace, Menlo, Consolas, monospace;
   background: var(--bg);
@@ -172,7 +189,7 @@ button {
 .song-line:hover { background: rgba(255,255,255,0.03); }
 .song-line.active-line { background: rgba(127, 216, 190, 0.12); }
 
-/* Timing marks from "Score my timing": the worst rating heard while this
+/* Timing marks from "Analyze Me": the worst rating heard while this
    line was active, so a problem spot stays visible after playing past it. */
 .song-line.rated-perfect { border-left-color: var(--accent-strong); }
 .song-line.rated-good { border-left-color: var(--accent); }
@@ -199,22 +216,12 @@ button {
 .chord-sym.rated-off { box-shadow: 0 2px 0 0 var(--warn); }
 .chord-sym.rated-miss { box-shadow: 0 2px 0 0 var(--bad); }
 
-.score-legend {
-  color: var(--text-dim);
-  font-size: 0.78rem;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin: 4px 0 8px;
-}
+.score-legend { display: inline-flex; gap: 3px; margin-left: auto; }
 .legend-swatch {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 2px;
-  margin-left: 8px;
-  margin-right: 3px;
 }
 .legend-swatch.rating-perfect { background: var(--accent-strong); }
 .legend-swatch.rating-good { background: var(--accent); }
@@ -254,7 +261,7 @@ button {
 .chord-diagram-fret-label { font-size: 8px; fill: var(--text-dim); }
 .chord-diagram-unknown { color: var(--text-dim); font-size: 0.85rem; max-width: 160px; }
 
-/* Tuner */
+/* Tuner view */
 .tuner-display { text-align: center; padding: 20px 0; }
 .tuner-note { font-size: 3rem; font-weight: 700; }
 .tuner-meter {
@@ -287,40 +294,96 @@ button {
 .tuner-cents { color: var(--text-dim); }
 .tuner-string-hint { margin-top: 10px; color: var(--accent); font-size: 0.9rem; }
 
-/* Rhythm coach */
-.beat-track {
+/* Bottom icon rail */
+.rail {
+  flex: 0 0 auto;
   display: flex;
-  gap: 5px;
-  overflow-x: auto;
-  padding: 14px 4px;
-  min-height: 32px;
+  border-top: 1px solid var(--panel-border);
+  background: var(--panel);
+}
+.rail-btn {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--text-dim);
+  padding: 8px 4px;
+}
+.rail-btn.active { color: var(--accent-strong); }
+.rail-icon { font-size: 1.2rem; }
+.rail-label { font-size: 0.68rem; }
+
+/* Upload panel (sheet modal) */
+.sheet-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 55;
+}
+.sheet-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+.sheet-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sheet-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+.song-search {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+.upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
 }
-.beat-dot {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-}
-.beat-dot.rating-perfect { background: var(--accent-strong); }
-.beat-dot.rating-good { background: var(--accent); }
-.beat-dot.rating-off { background: var(--warn); }
-.beat-dot.rating-miss { background: var(--bad); }
+.file-label { display: inline-block; }
 
-.rhythm-stats { display: flex; gap: 24px; margin-top: 10px; }
-.stat { text-align: center; }
-.stat-value { display: block; font-size: 1.4rem; font-weight: 700; color: var(--accent); }
-.stat-label { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; }
-
-.import-status {
-  color: var(--text-dim);
-  font-size: 0.82rem;
-  margin-top: 8px;
+.paste-area { display: flex; flex-direction: column; gap: 8px; }
+.paste-area textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
 }
+
+.import-status { color: var(--text-dim); font-size: 0.82rem; }
 
 .app-error {
   position: fixed;
-  bottom: 16px;
+  bottom: 70px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--bad);
@@ -333,5 +396,4 @@ button {
 
 @media (max-width: 480px) {
   .tuner-note { font-size: 2.2rem; }
-  .song-meta { gap: 10px; }
 }

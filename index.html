@@ -7,131 +7,94 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<header class="app-header">
-  <h1>Baritone Uke Coach</h1>
-  <p class="tagline">Listen, follow the chart, get feedback on your timing.</p>
-</header>
+<div id="app">
 
-<main class="app-main">
+  <header class="topbar">
+    <span id="songTitle" class="song-title">No song loaded</span>
+    <span id="keyDisplay" class="meta-chip" title="Key">&mdash;</span>
+    <button id="detectKeyBtn" class="icon-btn" type="button" title="Detect key from mic">🔑</button>
+    <input id="tempoInput" class="tempo-chip" type="number" min="30" max="240" value="90" title="Tempo (BPM)" />
+    <button id="tapTempoBtn" class="icon-btn" type="button" title="Tap tempo">👆</button>
+    <span id="timeSigDisplay" class="meta-chip" title="Time signature">4/4</span>
+  </header>
 
-  <section class="panel song-loader" aria-label="Load a song">
-    <div class="song-loader-row">
-      <label for="demoSongSelect">Demo song</label>
-      <select id="demoSongSelect">
-        <option value="">-- choose --</option>
-      </select>
+  <main class="main-view">
 
-      <label for="chordproFile" class="file-label">Upload chart (.cho/.txt/.pdf/.docx)</label>
-      <input type="file" id="chordproFile" accept=".cho,.chopro,.pro,.txt,.pdf,.docx,.doc" />
+    <section id="view-play" class="view">
+      <div class="play-modes">
+        <button id="modeMetronomeBtn" class="mode-btn" type="button">▶ Metronome</button>
+        <button id="modeFollowBtn" class="mode-btn" type="button">🎤 Follow Me</button>
+        <button id="modeAnalyzeBtn" class="mode-btn" type="button">🎯 Analyze Me</button>
+        <button id="stopBtn" class="mode-btn stop-btn" type="button">■ Stop</button>
+        <label class="scroll-toggle">
+          <input type="checkbox" id="autoScrollToggle" checked />
+          Auto-scroll
+        </label>
+      </div>
+      <p id="followStatus" class="status-line hidden"></p>
+      <div id="analyzeStats" class="status-line rhythm-stats hidden">
+        <span class="stat"><span id="statOnTime" class="stat-value">&mdash;</span><span class="stat-label">on-time</span></span>
+        <span class="stat"><span id="statAvgMs" class="stat-value">&mdash;</span><span class="stat-label">avg ms off</span></span>
+        <span class="stat"><span id="statCount" class="stat-value">0</span><span class="stat-label">strums</span></span>
+        <span class="score-legend">
+          <span class="legend-swatch rating-perfect"></span><span class="legend-swatch rating-good"></span><span class="legend-swatch rating-off"></span><span class="legend-swatch rating-miss"></span>
+        </span>
+      </div>
+      <div id="songView" class="song-view">
+        <p class="empty-hint">Tap 📁 below to load a song.</p>
+      </div>
+    </section>
 
-      <button id="togglePasteBtn" class="secondary-btn" type="button">Paste chords instead</button>
-    </div>
-    <div id="importStatus" class="import-status hidden"></div>
-    <div id="pasteArea" class="paste-area hidden">
-      <p id="pasteAreaHint" class="hint" style="margin-top:0">Paste or edit ChordPro-style text, then Load.</p>
-      <textarea id="pasteText" rows="8" placeholder="{title: My Song}&#10;{key: G}&#10;{tempo: 100}&#10;[G]Some lyrics [D]here..."></textarea>
-      <button id="loadPastedBtn" class="primary-btn" type="button">Load</button>
-    </div>
-    <p class="hint">
-      No song database lookup here (that needs an external service this app
-      doesn't have) &mdash; pick a demo, paste a <a href="https://www.chordpro.org/chordpro/chordpro-introduction/" target="_blank" rel="noopener">ChordPro</a>-style chart, or upload one.
-      A PDF or Word (.docx) lead sheet works too: chord placement is
-      reconstructed automatically and shown for you to review/fix before
-      loading, since that reconstruction is best-effort, not exact &mdash;
-      it needs real selectable text (a scanned/image-only PDF has none to
-      read), and .doc (the old binary format) isn't supported, only .docx.
-    </p>
-  </section>
+    <section id="view-tuner" class="view hidden">
+      <button id="tunerToggleBtn" class="mode-btn" type="button">🎤 Start Tuner</button>
+      <div class="tuner-display">
+        <div id="tunerNote" class="tuner-note">&mdash;</div>
+        <div class="tuner-meter">
+          <div id="tunerNeedle" class="tuner-needle"></div>
+          <div class="tuner-meter-center-line"></div>
+        </div>
+        <div id="tunerCents" class="tuner-cents"></div>
+        <div id="tunerString" class="tuner-string-hint"></div>
+      </div>
+    </section>
 
-  <section class="panel song-meta" aria-label="Song info">
-    <div class="meta-block">
-      <div id="songTitle" class="song-title">No song loaded</div>
-      <div id="songArtist" class="song-artist"></div>
-    </div>
-    <div class="meta-block">
-      <span class="meta-label">Key</span>
-      <span id="keyDisplay" class="meta-value">&mdash;</span>
-      <button id="detectKeyBtn" class="secondary-btn small-btn" type="button">Detect from mic</button>
-    </div>
-    <div class="meta-block">
-      <span class="meta-label">Tempo</span>
-      <input id="tempoInput" type="number" min="30" max="240" value="90" />
-      <span class="unit">BPM</span>
-      <button id="tapTempoBtn" class="secondary-btn small-btn" type="button">Tap</button>
-    </div>
-    <div class="meta-block">
-      <span class="meta-label">Time</span>
-      <span id="timeSigDisplay" class="meta-value">4/4</span>
-    </div>
-  </section>
+  </main>
 
-  <nav class="tabs" role="tablist" aria-label="Mode">
-    <button class="tab-btn active" data-tab="play" role="tab" aria-selected="true" type="button">Play &amp; Scroll</button>
-    <button class="tab-btn" data-tab="tuner" role="tab" aria-selected="false" type="button">Tuner</button>
-    <button class="tab-btn" data-tab="rhythm" role="tab" aria-selected="false" type="button">Rhythm Coach</button>
+  <nav class="rail" aria-label="Navigation">
+    <button id="railUpload" class="rail-btn" data-view="upload" type="button">
+      <span class="rail-icon">📁</span><span class="rail-label">Upload</span>
+    </button>
+    <button id="railPlay" class="rail-btn active" data-view="play" type="button">
+      <span class="rail-icon">▶</span><span class="rail-label">Play</span>
+    </button>
+    <button id="railTuner" class="rail-btn" data-view="tuner" type="button">
+      <span class="rail-icon">🎵</span><span class="rail-label">Tuner</span>
+    </button>
   </nav>
 
-  <section id="tab-play" class="tab-panel panel" role="tabpanel">
-    <div class="transport">
-      <button id="playBtn" class="primary-btn" type="button">▶ Play (metronome)</button>
-      <button id="followBtn" class="primary-btn" type="button">🎤 Follow My Playing</button>
-      <button id="stopBtn" class="secondary-btn" type="button">■ Stop</button>
-      <label class="scroll-toggle">
-        <input type="checkbox" id="autoScrollToggle" checked />
-        Auto-scroll
-      </label>
-      <label class="scroll-toggle">
-        <input type="checkbox" id="scoreTimingToggle" />
-        🎯 Score my timing (mic)
-      </label>
-    </div>
-    <p id="followStatus" class="follow-status hidden"></p>
-    <p id="scoreLegend" class="score-legend hidden">
-      Timing marks on the chart:
-      <span class="legend-swatch rating-perfect"></span>on time
-      <span class="legend-swatch rating-good"></span>close
-      <span class="legend-swatch rating-off"></span>off
-      <span class="legend-swatch rating-miss"></span>way off
-    </p>
-    <p class="hint">
-      <strong>Play (metronome)</strong> scrolls at a fixed tempo whether or
-      not you keep up. <strong>Follow My Playing</strong> instead listens
-      for your strums and only advances each line once it's heard enough
-      of them &mdash; it follows your actual pace, not the tempo dial.
-      Check <strong>Score my timing</strong> with Play (metronome) to mark
-      each line, and the specific chord within it, with how close your
-      strums landed to the beat &mdash; so you can see exactly where the
-      timing slipped instead of just an average.
-    </p>
-    <div id="songView" class="song-view">
-      <p class="empty-hint">Load a song above to see the chart here.</p>
-    </div>
-  </section>
-
-  <section id="tab-tuner" class="tab-panel panel hidden" role="tabpanel">
-    <button id="tunerToggleBtn" class="primary-btn" type="button">🎤 Start Tuner</button>
-    <div class="tuner-display">
-      <div id="tunerNote" class="tuner-note">&mdash;</div>
-      <div class="tuner-meter">
-        <div id="tunerNeedle" class="tuner-needle"></div>
-        <div class="tuner-meter-center-line"></div>
+  <div id="uploadPanel" class="sheet-modal hidden">
+    <div class="sheet-modal-backdrop"></div>
+    <div class="sheet-modal-content">
+      <div class="sheet-modal-header">
+        <span>Load a song</span>
+        <button id="closeUploadBtn" class="icon-btn" type="button" aria-label="Close">✕</button>
       </div>
-      <div id="tunerCents" class="tuner-cents"></div>
-      <div id="tunerString" class="tuner-string-hint"></div>
-    </div>
-    <p class="hint">Baritone tuning: D3 &middot; G3 &middot; B3 &middot; E4 (low to high) &mdash; same as a guitar's top 4 strings.</p>
-  </section>
 
-  <section id="tab-rhythm" class="tab-panel panel hidden" role="tabpanel">
-    <button id="rhythmToggleBtn" class="primary-btn" type="button">🎤 Start Rhythm Coach</button>
-    <p class="hint">Starts the metronome at the tempo above and listens for your strums, comparing each one to the beat.</p>
-    <div id="beatTrack" class="beat-track"></div>
-    <div class="rhythm-stats">
-      <div class="stat"><span id="statOnTime" class="stat-value">&mdash;</span><span class="stat-label">on-time</span></div>
-      <div class="stat"><span id="statAvgMs" class="stat-value">&mdash;</span><span class="stat-label">avg ms off</span></div>
-      <div class="stat"><span id="statCount" class="stat-value">0</span><span class="stat-label">strums heard</span></div>
+      <input id="songSearch" class="song-search" type="text" list="songDatalist" placeholder="Search songs…" autocomplete="off" />
+      <datalist id="songDatalist"></datalist>
+
+      <div class="upload-row">
+        <label for="chordproFile" class="file-label secondary-btn">Upload file (.cho/.txt/.pdf/.docx)</label>
+        <input type="file" id="chordproFile" accept=".cho,.chopro,.pro,.txt,.pdf,.docx,.doc" class="hidden" />
+        <button id="togglePasteBtn" class="secondary-btn" type="button">Paste chords instead</button>
+      </div>
+      <div id="importStatus" class="import-status hidden"></div>
+      <div id="pasteArea" class="paste-area hidden">
+        <textarea id="pasteText" rows="8" placeholder="{title: My Song}&#10;{key: G}&#10;{tempo: 100}&#10;[G]Some lyrics [D]here..."></textarea>
+        <button id="loadPastedBtn" class="primary-btn" type="button">Load</button>
+      </div>
     </div>
-  </section>
+  </div>
 
   <div id="chordModal" class="chord-modal hidden">
     <div class="chord-modal-backdrop"></div>
@@ -140,7 +103,7 @@
 
   <div id="appError" class="app-error hidden"></div>
 
-</main>
+</div>
 
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/mammoth.browser.min.js"></script>
@@ -148,6 +111,7 @@
 <script src="js/chordpro.js"></script>
 <script src="js/chords-baritone.js"></script>
 <script src="js/songs.js"></script>
+<script src="js/songlibrary.js"></script>
 <script src="js/metronome.js"></script>
 <script src="js/tuner.js"></script>
 <script src="js/keydetect.js"></script>

@@ -18,6 +18,7 @@ await page.goto('http://127.0.0.1:8934/index.html');
 await page.waitForSelector('#songTitle');
 
 // --- PDF import ---
+await page.click('#railUpload');
 await page.setInputFiles('#chordproFile', path.resolve('sample_leadsheet.pdf'));
 await page.waitForSelector('#pasteArea:not(.hidden)', { timeout: 10000 });
 const pdfText = await page.inputValue('#pasteText');
@@ -38,6 +39,7 @@ console.log('rendered lines after PDF load:', pdfLineCount);
 if (pdfLineCount < 2) throw new Error('PDF import: song did not render after load');
 
 // --- DOCX import ---
+await page.click('#railUpload');
 await page.setInputFiles('#chordproFile', path.resolve('sample_leadsheet.docx'));
 await page.waitForSelector('#pasteArea:not(.hidden)', { timeout: 10000 });
 await page.waitForTimeout(300);

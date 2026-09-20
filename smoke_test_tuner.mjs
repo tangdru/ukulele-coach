@@ -34,7 +34,7 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
 await page.goto('http://127.0.0.1:8934/index.html');
-await page.click('.tab-btn[data-tab="tuner"]');
+await page.click('#railTuner');
 await page.click('#tunerToggleBtn');
 
 const readings = [];

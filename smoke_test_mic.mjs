@@ -20,8 +20,14 @@ page.on('console', (msg) => {
 await page.goto('http://127.0.0.1:8934/index.html');
 await page.waitForSelector('#songTitle');
 
+// Need a song loaded for Analyze Me (the mic-driven timing-scoring mode).
+await page.click('#railUpload');
+await page.fill('#songSearch', 'Amazing Grace');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(200);
+
 // Tuner
-await page.click('.tab-btn[data-tab="tuner"]');
+await page.click('#railTuner');
 await page.click('#tunerToggleBtn');
 await page.waitForTimeout(1500);
 const tunerBtnText = await page.textContent('#tunerToggleBtn');
@@ -29,22 +35,24 @@ console.log('tuner button after start:', tunerBtnText);
 if (!tunerBtnText.includes('Stop')) throw new Error('tuner did not start');
 await page.click('#tunerToggleBtn');
 
-// Rhythm coach
-await page.click('.tab-btn[data-tab="rhythm"]');
-await page.click('#rhythmToggleBtn');
+// Analyze Me (mic-driven timing scoring -- what used to be the separate
+// Rhythm Coach tab, now folded into Play as an equal-weight mode)
+await page.click('#railPlay');
+await page.click('#modeAnalyzeBtn');
 await page.waitForTimeout(2000);
-const rhythmBtnText = await page.textContent('#rhythmToggleBtn');
-const dotCount = await page.locator('.beat-dot').count();
-console.log('rhythm button after start:', rhythmBtnText, '| beat dots (from fake silent audio, may be 0):', dotCount);
-if (!rhythmBtnText.includes('Stop')) throw new Error('rhythm coach did not start');
-await page.click('#rhythmToggleBtn');
+const analyzeActive = await page.locator('#modeAnalyzeBtn').evaluate((el) => el.classList.contains('active'));
+const statsVisible = await page.locator('#analyzeStats').isVisible();
+console.log('analyze mode active:', analyzeActive, '| stats row visible:', statsVisible);
+if (!analyzeActive) throw new Error('Analyze Me did not start');
+if (!statsVisible) throw new Error('analyze stats row should be visible once Analyze Me starts');
+await page.click('#stopBtn');
 
 // Key detect (short-circuit by checking it starts without throwing; full 6s wait is slow)
 await page.click('#detectKeyBtn');
 await page.waitForTimeout(500);
 const detectBtnText = await page.textContent('#detectKeyBtn');
 console.log('detect key button mid-listen:', detectBtnText);
-if (!detectBtnText.includes('Listening')) throw new Error('key detect did not start listening');
+if (!/%$/.test(detectBtnText.trim())) throw new Error('key detect did not show listening progress');
 
 await browser.close();
 
