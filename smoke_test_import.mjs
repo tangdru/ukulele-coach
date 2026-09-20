@@ -1,15 +1,13 @@
 import { chromium } from 'playwright-core';
 import path from 'node:path';
+import { isBenignTestEnvError } from './test_helpers.mjs';
 
 const errors = [];
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', headless: true });
 const page = await browser.newPage();
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (msg) => {
-  // Chromium's generic "Failed to load resource: 404" for /favicon.ico
-  // carries no URL in msg.text(), so it's filtered by message text alone;
-  // confirmed against the server access log to be only the favicon.
-  if (msg.type() === 'error' && !/Failed to load resource.*404/.test(msg.text())) {
+  if (msg.type() === 'error' && !isBenignTestEnvError(msg.text())) {
     errors.push('console.error: ' + msg.text());
   }
 });

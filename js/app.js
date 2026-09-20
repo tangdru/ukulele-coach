@@ -554,5 +554,9 @@
     e.target.value = '';
   });
 
+  // Demos are available instantly; the saved-song library (Supabase, or
+  // localStorage if not configured) loads asynchronously and re-populates
+  // the datalist once it's in, rather than blocking on it.
   populateSongDatalist();
+  ensureSongLibraryLoaded().then(populateSongDatalist);
 })();

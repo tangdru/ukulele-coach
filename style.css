@@ -48,11 +48,19 @@ button {
 /* App shell: fixed-height column so the chart gets all the leftover space */
 #app {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100vh;
   height: 100dvh;
-  max-width: 760px;
+  max-width: 820px;
   margin: 0 auto;
+}
+
+.app-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 /* Compact top bar */
@@ -161,12 +169,19 @@ button {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: auto;
   font-family: ui-monospace, Menlo, Consolas, monospace;
   background: var(--bg);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   padding: 12px;
 }
+/* Lyric/chord lines use pre-formatted monospace text with chords
+   absolutely positioned by character column, so they must not wrap (that
+   would break the alignment) -- a line wider than the viewport scrolls
+   horizontally (via .song-view's overflow-x) instead of wrapping or
+   getting clipped. */
+.song-line { width: max-content; min-width: 100%; }
 .empty-hint { color: var(--text-dim); margin: 0; font-family: inherit; }
 
 .section-header {
@@ -294,26 +309,31 @@ button {
 .tuner-cents { color: var(--text-dim); }
 .tuner-string-hint { margin-top: 10px; color: var(--accent); font-size: 0.9rem; }
 
-/* Bottom icon rail */
+/* Left icon rail */
 .rail {
   flex: 0 0 auto;
+  width: 64px;
   display: flex;
-  border-top: 1px solid var(--panel-border);
+  flex-direction: column;
+  border-right: 1px solid var(--panel-border);
   background: var(--panel);
+  padding-top: 6px;
 }
 .rail-btn {
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   background: transparent;
   border: none;
   border-radius: 0;
+  border-left: 3px solid transparent;
   color: var(--text-dim);
-  padding: 8px 4px;
+  padding: 12px 4px;
 }
-.rail-btn.active { color: var(--accent-strong); }
+.rail-btn.active { color: var(--accent-strong); border-left-color: var(--accent-strong); background: rgba(127, 216, 190, 0.08); }
 .rail-icon { font-size: 1.2rem; }
 .rail-label { font-size: 0.68rem; }
 

@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { isBenignTestEnvError } from './test_helpers.mjs';
 
 const errors = [];
 const browser = await chromium.launch({
@@ -14,7 +15,7 @@ const context = await browser.newContext({ permissions: ['microphone'] });
 const page = await context.newPage();
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (msg) => {
-  if (msg.type() === 'error' && !msg.text().includes('favicon')) errors.push('console.error: ' + msg.text());
+  if (msg.type() === 'error' && !isBenignTestEnvError(msg.text())) errors.push('console.error: ' + msg.text());
 });
 
 await page.goto('http://127.0.0.1:8934/index.html');

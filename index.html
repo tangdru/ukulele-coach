@@ -9,68 +9,72 @@
 <body>
 <div id="app">
 
-  <header class="topbar">
-    <span id="songTitle" class="song-title">No song loaded</span>
-    <span id="keyDisplay" class="meta-chip" title="Key">&mdash;</span>
-    <button id="detectKeyBtn" class="icon-btn" type="button" title="Detect key from mic">🔑</button>
-    <input id="tempoInput" class="tempo-chip" type="number" min="30" max="240" value="90" title="Tempo (BPM)" />
-    <button id="tapTempoBtn" class="icon-btn" type="button" title="Tap tempo">👆</button>
-    <span id="timeSigDisplay" class="meta-chip" title="Time signature">4/4</span>
-  </header>
-
-  <main class="main-view">
-
-    <section id="view-play" class="view">
-      <div class="play-modes">
-        <button id="modeMetronomeBtn" class="mode-btn" type="button">▶ Metronome</button>
-        <button id="modeFollowBtn" class="mode-btn" type="button">🎤 Follow Me</button>
-        <button id="modeAnalyzeBtn" class="mode-btn" type="button">🎯 Analyze Me</button>
-        <button id="stopBtn" class="mode-btn stop-btn" type="button">■ Stop</button>
-        <label class="scroll-toggle">
-          <input type="checkbox" id="autoScrollToggle" checked />
-          Auto-scroll
-        </label>
-      </div>
-      <p id="followStatus" class="status-line hidden"></p>
-      <div id="analyzeStats" class="status-line rhythm-stats hidden">
-        <span class="stat"><span id="statOnTime" class="stat-value">&mdash;</span><span class="stat-label">on-time</span></span>
-        <span class="stat"><span id="statAvgMs" class="stat-value">&mdash;</span><span class="stat-label">avg ms off</span></span>
-        <span class="stat"><span id="statCount" class="stat-value">0</span><span class="stat-label">strums</span></span>
-        <span class="score-legend">
-          <span class="legend-swatch rating-perfect"></span><span class="legend-swatch rating-good"></span><span class="legend-swatch rating-off"></span><span class="legend-swatch rating-miss"></span>
-        </span>
-      </div>
-      <div id="songView" class="song-view">
-        <p class="empty-hint">Tap 📁 below to load a song.</p>
-      </div>
-    </section>
-
-    <section id="view-tuner" class="view hidden">
-      <button id="tunerToggleBtn" class="mode-btn" type="button">🎤 Start Tuner</button>
-      <div class="tuner-display">
-        <div id="tunerNote" class="tuner-note">&mdash;</div>
-        <div class="tuner-meter">
-          <div id="tunerNeedle" class="tuner-needle"></div>
-          <div class="tuner-meter-center-line"></div>
-        </div>
-        <div id="tunerCents" class="tuner-cents"></div>
-        <div id="tunerString" class="tuner-string-hint"></div>
-      </div>
-    </section>
-
-  </main>
-
   <nav class="rail" aria-label="Navigation">
-    <button id="railUpload" class="rail-btn" data-view="upload" type="button">
+    <button id="railUpload" class="rail-btn" data-view="upload" type="button" title="Upload">
       <span class="rail-icon">📁</span><span class="rail-label">Upload</span>
     </button>
-    <button id="railPlay" class="rail-btn active" data-view="play" type="button">
+    <button id="railPlay" class="rail-btn active" data-view="play" type="button" title="Play">
       <span class="rail-icon">▶</span><span class="rail-label">Play</span>
     </button>
-    <button id="railTuner" class="rail-btn" data-view="tuner" type="button">
+    <button id="railTuner" class="rail-btn" data-view="tuner" type="button" title="Tuner">
       <span class="rail-icon">🎵</span><span class="rail-label">Tuner</span>
     </button>
   </nav>
+
+  <div class="app-content">
+
+    <header class="topbar">
+      <span id="songTitle" class="song-title">No song loaded</span>
+      <span id="keyDisplay" class="meta-chip" title="Key">&mdash;</span>
+      <button id="detectKeyBtn" class="icon-btn" type="button" title="Detect key from mic">🔑</button>
+      <input id="tempoInput" class="tempo-chip" type="number" min="30" max="240" value="90" title="Tempo (BPM)" />
+      <button id="tapTempoBtn" class="icon-btn" type="button" title="Tap tempo">👆</button>
+      <span id="timeSigDisplay" class="meta-chip" title="Time signature">4/4</span>
+    </header>
+
+    <main class="main-view">
+
+      <section id="view-play" class="view">
+        <div class="play-modes">
+          <button id="modeMetronomeBtn" class="mode-btn" type="button">▶ Metronome</button>
+          <button id="modeFollowBtn" class="mode-btn" type="button">🎤 Follow Me</button>
+          <button id="modeAnalyzeBtn" class="mode-btn" type="button">🎯 Analyze Me</button>
+          <button id="stopBtn" class="mode-btn stop-btn" type="button">■ Stop</button>
+          <label class="scroll-toggle">
+            <input type="checkbox" id="autoScrollToggle" checked />
+            Auto-scroll
+          </label>
+        </div>
+        <p id="followStatus" class="status-line hidden"></p>
+        <div id="analyzeStats" class="status-line rhythm-stats hidden">
+          <span class="stat"><span id="statOnTime" class="stat-value">&mdash;</span><span class="stat-label">on-time</span></span>
+          <span class="stat"><span id="statAvgMs" class="stat-value">&mdash;</span><span class="stat-label">avg ms off</span></span>
+          <span class="stat"><span id="statCount" class="stat-value">0</span><span class="stat-label">strums</span></span>
+          <span class="score-legend">
+            <span class="legend-swatch rating-perfect"></span><span class="legend-swatch rating-good"></span><span class="legend-swatch rating-off"></span><span class="legend-swatch rating-miss"></span>
+          </span>
+        </div>
+        <div id="songView" class="song-view">
+          <p class="empty-hint">Tap 📁 to load a song.</p>
+        </div>
+      </section>
+
+      <section id="view-tuner" class="view hidden">
+        <button id="tunerToggleBtn" class="mode-btn" type="button">🎤 Start Tuner</button>
+        <div class="tuner-display">
+          <div id="tunerNote" class="tuner-note">&mdash;</div>
+          <div class="tuner-meter">
+            <div id="tunerNeedle" class="tuner-needle"></div>
+            <div class="tuner-meter-center-line"></div>
+          </div>
+          <div id="tunerCents" class="tuner-cents"></div>
+          <div id="tunerString" class="tuner-string-hint"></div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
 
   <div id="uploadPanel" class="sheet-modal hidden">
     <div class="sheet-modal-backdrop"></div>
@@ -105,6 +109,8 @@
 
 </div>
 
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/mammoth.browser.min.js"></script>
 <script src="js/pitch.js"></script>

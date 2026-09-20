@@ -1,11 +1,12 @@
 import { chromium } from 'playwright-core';
+import { isBenignTestEnvError } from './test_helpers.mjs';
 
 const errors = [];
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', headless: true });
 const page = await browser.newPage();
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (msg) => {
-  if (msg.type() === 'error') errors.push('console.error: ' + msg.text());
+  if (msg.type() === 'error' && !isBenignTestEnvError(msg.text())) errors.push('console.error: ' + msg.text());
 });
 
 await page.goto('http://127.0.0.1:8934/index.html');

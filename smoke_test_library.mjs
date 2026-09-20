@@ -1,8 +1,15 @@
-// Verifies the song library actually persists across a real page reload
-// (localStorage), not just within the same in-memory page session --
-// pasting/uploading a song should mean never needing to paste/upload it
-// again on a later visit.
+// Verifies the song library actually persists across a real page reload,
+// not just within the same in-memory page session -- pasting/uploading a
+// song should mean never needing to paste/upload it again on a later
+// visit. In this sandboxed test environment, Supabase (if config.js is
+// pointed at a real project) is unreachable -- external network egress is
+// blocked here -- so this specifically exercises and confirms the
+// localStorage fallback path; against a reachable Supabase project the
+// same assertions confirm the shared-database path instead, since both
+// go through the identical ensureSongLibraryLoaded()/saveSongToLibrary()
+// code path in js/songlibrary.js.
 import { chromium } from 'playwright-core';
+import { isBenignTestEnvError } from './test_helpers.mjs';
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', headless: true });
 const context = await browser.newContext();
@@ -10,7 +17,7 @@ const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (msg) => {
-  if (msg.type() === 'error' && !/Failed to load resource.*404/.test(msg.text())) {
+  if (msg.type() === 'error' && !isBenignTestEnvError(msg.text())) {
     errors.push('console.error: ' + msg.text());
   }
 });
@@ -27,9 +34,16 @@ await page.waitForTimeout(200);
 await page.reload();
 await page.waitForSelector('#songTitle');
 await page.click('#railUpload');
+
+// The library load has an internal 4s timeout before falling back to
+// localStorage (see songlibrary.js), so poll for the option to appear
+// rather than guessing a fixed wait.
+await page.waitForFunction(
+  () => [...document.querySelectorAll('#songDatalist option')].some((o) => o.value === 'Persisted Song'),
+  { timeout: 8000 }
+);
 const options = await page.locator('#songDatalist option').evaluateAll((opts) => opts.map((o) => o.value));
 console.log('datalist after reload:', options);
-if (!options.includes('Persisted Song')) throw new Error('Saved song did not survive a page reload');
 
 await page.fill('#songSearch', 'Persisted Song');
 await page.keyboard.press('Enter');

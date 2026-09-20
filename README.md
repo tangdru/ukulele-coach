@@ -9,25 +9,35 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
 ## Layout
 
 The screen is the chart — nothing else competes for space. A thin top bar
-carries song title / key / tempo; a bottom icon rail (**Upload**,
-**Play**, **Tuner**) is the only navigation. Tapping **Upload** opens a
-sheet over the chart to load a song; it closes itself the moment a song
-loads. There's no standing explainer text in the UI by design — the
-paragraphs below are the explanations, kept in this README instead of on
-screen.
+carries song title / key / tempo; a left icon rail (**Upload**, **Play**,
+**Tuner**) is the only navigation. Tapping **Upload** opens a sheet over
+the chart to load a song; it closes itself the moment a song loads.
+There's no standing explainer text in the UI by design — the paragraphs
+below are the explanations, kept in this README instead of on screen.
 
 ## What it does
 
 - **Song chart** — paste or upload a [ChordPro](https://www.chordpro.org/chordpro/chordpro-introduction/)-style
   chord chart, upload a PDF or Word (.docx) lead sheet, or search/pick a
   previously loaded song (see Song library below). Chords render above
-  the lyrics; tap any chord to see its fingering.
-- **Song library** — every song you paste or upload gets saved to the
-  browser's local storage under its title, so next time it's just a
-  search-and-select in the Upload sheet instead of uploading or pasting
-  again. The search box is a native `<input list>` / `<datalist>` combo:
-  type to filter, matching both the two bundled demos and everything
-  you've saved.
+  the lyrics; tap any chord to see its fingering. Long lines scroll
+  horizontally within the chart rather than wrapping (wrapping would
+  break chord-to-lyric column alignment) or getting clipped.
+- **Song library, shared across devices** — every song you paste or
+  upload gets saved to a [Supabase](https://supabase.com) table
+  (`uke_songs`, see `config.js`) under its title, so next time — on this
+  device or any other — it's just a search-and-select in the Upload sheet
+  instead of uploading or pasting again. The search box is a native
+  `<input list>` / `<datalist>` combo: type to filter, matching both the
+  two bundled demos and everything saved. There's no login, so like the
+  Supabase table this shares its project with (see
+  [tangdru/familytree](https://github.com/tangdru/familytree)'s README
+  for the pattern this follows), **anyone with the site link can see, add,
+  or overwrite songs by title** — fine for chord charts, not a place to
+  put anything sensitive. If `config.js` is left blank or Supabase is
+  unreachable, it falls back to this browser's local storage only (same
+  behavior, just private to this device, and the database attempt is
+  capped at 4 seconds so an unreachable database doesn't stall loading).
 - **PDF/Word lead sheet import** — reconstructs the chord-above-lyric
   layout from the file's text positions (PDF) or paragraph order (Word),
   detects lines that are made up entirely of chord symbols, and merges
@@ -146,11 +156,13 @@ python3 -m http.server 8000
 
 ## Built with
 
-Plain HTML/JS/CSS, no build step. `vendor/` has two locally-hosted
+Plain HTML/JS/CSS, no build step. `vendor/` has three locally-hosted
 libraries (not loaded from a CDN, so the app doesn't depend on one being
 reachable): [pdf.js](https://mozilla.github.io/pdf.js/) (Apache-2.0) for
-reading PDF text, and [mammoth.js](https://github.com/mwilliamson/mammoth.js)
-(BSD-2-Clause) for reading .docx text.
+reading PDF text, [mammoth.js](https://github.com/mwilliamson/mammoth.js)
+(BSD-2-Clause) for reading .docx text, and
+[supabase-js](https://github.com/supabase/supabase-js) (MIT) for the song
+library's database.
 
 ## Testing
 
@@ -172,8 +184,11 @@ during Analyze Me and asserts real timing hits reach the DOM as rated-*
 marks on the correct line and chord, that they survive Stop, and that a
 new song load clears them; `smoke_test_library.mjs` pastes a song, does a
 real full page reload (not just in-page navigation), and asserts the
-song is still there in the search list and loadable by name. Run a
-static server first, then:
+song is still there in the search list and loadable by name -- in this
+project's own CI/sandbox, Supabase is unreachable, so this specifically
+exercises the localStorage fallback path (`test_helpers.mjs` filters
+those expected network failures out of each test's error checks; see its
+comments). Run a static server first, then:
 
 ```
 node smoke_test.mjs
