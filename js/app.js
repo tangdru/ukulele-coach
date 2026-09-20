@@ -76,6 +76,13 @@
   }
 
   function loadSong(chordproText) {
+    // Finalize/save any in-progress Analyze Me session against the *old*
+    // song before its chart lines are replaced -- stopScroll() (called
+    // here) is what records session history, and it needs the outgoing
+    // song's flatLines/ratings still in place to do that.
+    stopScroll();
+    stopFollow();
+
     const song = parseChordPro(chordproText);
     currentSong = song;
     renderSong(song);
@@ -84,8 +91,6 @@
     $('keyDisplay').textContent = song.key || '—';
     $('timeSigDisplay').textContent = song.timeSig || '4/4';
     if (song.tempo) $('tempoInput').value = song.tempo;
-    stopScroll();
-    stopFollow();
     clearTimingMarks();
 
     if (song.title) {
@@ -172,6 +177,9 @@
 
   async function startScroll(scoring) {
     if (!flatLines.length) return;
+    // Switching modes directly (e.g. Analyze Me -> Metronome) without
+    // hitting Stop first should still save the session that was running.
+    finalizeAnalyzeSession();
     stopFollow();
 
     if (scoring) {
@@ -248,6 +256,40 @@
     $('analyzeStats').classList.add('hidden');
   }
 
+  // Saves the just-finished Analyze Me run to session history (grade +
+  // which lines timing was off on), if it actually produced any hits.
+  // Guarded by analyzeActive so it only ever records once per run, no
+  // matter which of the several code paths that end a scored session
+  // (Stop button, switching modes, loading a new song, the scroll running
+  // off the end of the chart) triggers it.
+  function finalizeAnalyzeSession() {
+    if (analyzeActive && rhythmCoach && rhythmCoach.hits.length > 0) {
+      recordAnalyzeSession();
+    }
+    analyzeActive = false;
+  }
+
+  function recordAnalyzeSession() {
+    const stats = rhythmCoach.allStats();
+    const lines = [];
+    lineWorstRating.forEach((rating, idx) => {
+      if (!rating) return;
+      const el = flatLines[idx];
+      const lyricEl = el && el.querySelector('.lyric-row');
+      lines.push({ index: idx, text: lyricEl ? lyricEl.textContent : '', rating });
+    });
+    saveSessionToHistory({
+      songTitle: (currentSong && currentSong.title) || 'Untitled',
+      createdAt: new Date().toISOString(),
+      count: stats.count,
+      onTimePct: stats.onTimePct,
+      avgAbsMs: stats.avgAbsMs,
+      grade: gradeForStats(stats.onTimePct, stats.count),
+      lines,
+    });
+    if (!$('view-history').classList.contains('hidden')) renderHistoryView();
+  }
+
   function rhythmStatsLoop() {
     if (!analyzeActive) return;
     const stats = rhythmCoach.stats();
@@ -282,6 +324,7 @@
   }
 
   function stopScroll() {
+    finalizeAnalyzeSession();
     scrollActive = false;
     analyzeActive = false;
     if (scrollRafId) cancelAnimationFrame(scrollRafId);
@@ -319,9 +362,8 @@
   // ---------- Follow My Playing (listens instead of running a clock) ----------
 
   function updateFollowStatus(count, total) {
-    const el = $('followStatus');
-    el.classList.remove('hidden');
-    el.textContent = `🎧 Listening… ${count}/${total} beats heard on this line`;
+    $('followStatus').classList.remove('hidden');
+    $('followStatusText').textContent = `Listening… ${count}/${total} beats heard on this line`;
   }
 
   async function startFollow() {
@@ -414,6 +456,73 @@
 
   $('railPlay').addEventListener('click', () => switchView('play'));
   $('railTuner').addEventListener('click', () => switchView('tuner'));
+  $('railHistory').addEventListener('click', () => {
+    switchView('history'); // finalizes any in-progress Analyze Me session first
+    ensureSessionHistoryLoaded().then(renderHistoryView);
+  });
+
+  // ---------- History (static, read-only view of past Analyze Me sessions) ----------
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s == null ? '' : String(s);
+    return div.innerHTML;
+  }
+
+  function renderHistoryView() {
+    const container = $('historyContent');
+    const history = sessionHistorySnapshot();
+    if (!history.length) {
+      container.innerHTML = '<p class="empty-hint">No Analyze Me sessions recorded yet — run Analyze Me, then Stop, to save your first grade.</p>';
+      return;
+    }
+
+    let html = '';
+
+    if (currentSong && currentSong.title) {
+      const problems = problemLinesForSong(currentSong.title, 5);
+      if (problems.length) {
+        html += `<div class="history-problems">
+          <h3>Trouble spots in &ldquo;${escapeHtml(currentSong.title)}&rdquo;</h3>
+          <ol>${problems
+            .map(
+              (p) =>
+                `<li>${escapeHtml(p.text || '(blank line)')} <span class="problem-count">flagged in ${p.sessionsFlagged} session${p.sessionsFlagged === 1 ? '' : 's'}</span></li>`
+            )
+            .join('')}</ol>
+        </div>`;
+      }
+    }
+
+    html += '<h3>Session history</h3><ul class="history-sessions">';
+    history.forEach((s) => {
+      const date = new Date(s.createdAt);
+      const dateStr = isNaN(date.getTime()) ? '' : date.toLocaleString();
+      const problemLines = (s.lines || []).filter((l) => l.rating === 'off' || l.rating === 'miss');
+      html += `<li class="history-session">
+        <div class="history-session-head">
+          <span class="grade-badge grade-${escapeHtml((s.grade || '—').toLowerCase())}">${escapeHtml(s.grade || '—')}</span>
+          <span class="history-song-title">${escapeHtml(s.songTitle || 'Untitled')}</span>
+          <span class="history-date">${escapeHtml(dateStr)}</span>
+        </div>
+        <div class="history-session-stats">
+          <span>${s.count || 0} strums</span>
+          <span>${Math.round(s.onTimePct || 0)}% on-time</span>
+          <span>${Math.round(s.avgAbsMs || 0)} ms avg off</span>
+        </div>
+        ${
+          problemLines.length
+            ? `<div class="history-session-lines">${problemLines
+                .map((l) => `<span class="rated-${l.rating}">${escapeHtml(l.text || '(blank line)')}</span>`)
+                .join('')}</div>`
+            : ''
+        }
+      </li>`;
+    });
+    html += '</ul>';
+
+    container.innerHTML = html;
+  }
 
   function openUploadPanel() {
     $('uploadPanel').classList.remove('hidden');
@@ -435,7 +544,7 @@
     if (tunerRunning) {
       tuner.stop();
       tunerRunning = false;
-      $('tunerToggleBtn').textContent = '🎤 Start Tuner';
+      $('tunerToggleLabel').textContent = 'Start Tuner';
       return;
     }
     const ok = await ensureMic();
@@ -458,7 +567,7 @@
     };
     tuner.start();
     tunerRunning = true;
-    $('tunerToggleBtn').textContent = '⏹ Stop Tuner';
+    $('tunerToggleLabel').textContent = 'Stop Tuner';
   });
 
   // ---------- Key detection ----------
@@ -468,14 +577,14 @@
     if (!ok) return;
     keyDetector = keyDetector || new KeyDetector(audioCtx, analyser);
     const btn = $('detectKeyBtn');
+    const progress = $('detectKeyProgress');
     btn.disabled = true;
-    const originalLabel = btn.textContent;
     keyDetector.onProgress = (frac) => {
-      btn.textContent = `${Math.round(frac * 100)}%`;
+      progress.textContent = `${Math.round(frac * 100)}%`;
     };
     const result = await keyDetector.start(6);
     btn.disabled = false;
-    btn.textContent = originalLabel;
+    progress.textContent = '';
     if (result) {
       $('keyDisplay').textContent = result.key;
       if (currentSong) currentSong.key = result.key;
@@ -559,4 +668,5 @@
   // the datalist once it's in, rather than blocking on it.
   populateSongDatalist();
   ensureSongLibraryLoaded().then(populateSongDatalist);
+  ensureSessionHistoryLoaded();
 })();

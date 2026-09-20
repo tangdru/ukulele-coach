@@ -10,8 +10,9 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
 
 The screen is the chart — nothing else competes for space. A thin top bar
 carries song title / key / tempo; a left icon rail (**Upload**, **Play**,
-**Tuner**) is the only navigation. Tapping **Upload** opens a sheet over
-the chart to load a song; it closes itself the moment a song loads.
+**Tuner**, **History**) is the only navigation. Tapping **Upload** opens a
+sheet over the chart to load a song; it closes itself the moment a song
+loads.
 There's no standing explainer text in the UI by design — the paragraphs
 below are the explanations, kept in this README instead of on screen.
 
@@ -69,6 +70,18 @@ below are the explanations, kept in this README instead of on screen.
     count row tracks the running session. Marks stay on the chart after
     Stop so you can review the whole run; a fresh Analyze Me run or a new
     song load clears them.
+- **Practice history, graded** — every Analyze Me run you finish (Stop,
+  switching modes, loading a new song, or letting it run to the end of the
+  chart all count as "finishing") is graded A–F from its on-time
+  percentage and saved to the **History** rail view — a static, read-only
+  list, not something that updates live while you're looking at it. Each
+  entry shows the grade, song, date, and the specific lines that were off
+  or missed that run; when the currently loaded song has history, the top
+  of the view also shows which lines have been flagged across the *most*
+  past sessions for that song — the parts actually worth spending practice
+  time on, not just this run's rough patch. Saved the same way as the song
+  library (`uke_sessions` table, see `config.js`; falls back to local
+  storage if Supabase isn't configured or reachable).
 
   Tap any line to jump there in any mode; auto-scroll can be toggled off
   if you just want the beat/line tracking without the page moving under
@@ -168,7 +181,7 @@ library's database.
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
-and `smoke_test_library.mjs` are Playwright scripts (not part of the
+`smoke_test_library.mjs`, and `smoke_test_history.mjs` are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -184,11 +197,15 @@ during Analyze Me and asserts real timing hits reach the DOM as rated-*
 marks on the correct line and chord, that they survive Stop, and that a
 new song load clears them; `smoke_test_library.mjs` pastes a song, does a
 real full page reload (not just in-page navigation), and asserts the
-song is still there in the search list and loadable by name -- in this
-project's own CI/sandbox, Supabase is unreachable, so this specifically
-exercises the localStorage fallback path (`test_helpers.mjs` filters
-those expected network failures out of each test's error checks; see its
-comments). Run a static server first, then:
+song is still there in the search list and loadable by name;
+`smoke_test_history.mjs` runs a sloppy-timing Analyze Me session, stops
+it, and asserts a graded entry with the specific off/missed lines shows
+up in the History view, survives a real reload, and a second run adds a
+second entry rather than replacing the first -- in this
+project's own CI/sandbox, Supabase is unreachable, so both of these
+specifically exercise the localStorage fallback path (`test_helpers.mjs`
+filters those expected network failures out of each test's error checks;
+see its comments). Run a static server first, then:
 
 ```
 node smoke_test.mjs
@@ -197,5 +214,6 @@ node smoke_test_tuner.mjs
 node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
 node smoke_test_library.mjs
+node smoke_test_history.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

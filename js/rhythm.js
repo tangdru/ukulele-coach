@@ -52,9 +52,20 @@ class RhythmCoach {
   stats(windowSec = 20) {
     const now = this.ctx.currentTime;
     const recent = this.hits.filter((h) => h.time > now - windowSec);
-    if (!recent.length) return { count: 0, avgAbsMs: 0, onTimePct: 0 };
-    const avgAbsMs = recent.reduce((s, h) => s + Math.abs(h.deltaMs), 0) / recent.length;
-    const onTimePct = (recent.filter((h) => h.rating === 'perfect' || h.rating === 'good').length / recent.length) * 100;
-    return { count: recent.length, avgAbsMs, onTimePct };
+    return this._summarize(recent);
+  }
+
+  // Stats over every hit this session, not just a recent rolling window --
+  // used for the end-of-session grade, since that should reflect the whole
+  // run rather than however it happened to be trending at the last poll.
+  allStats() {
+    return this._summarize(this.hits);
+  }
+
+  _summarize(hits) {
+    if (!hits.length) return { count: 0, avgAbsMs: 0, onTimePct: 0 };
+    const avgAbsMs = hits.reduce((s, h) => s + Math.abs(h.deltaMs), 0) / hits.length;
+    const onTimePct = (hits.filter((h) => h.rating === 'perfect' || h.rating === 'good').length / hits.length) * 100;
+    return { count: hits.length, avgAbsMs, onTimePct };
   }
 }

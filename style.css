@@ -89,15 +89,34 @@ button {
   font-size: 0.85rem;
   flex: 0 0 auto;
 }
+/* Shared outline-icon sizing: every icon is an <svg><use></svg> against
+   the sprite sheet at the top of the page, colored via currentColor so it
+   always matches its button's text/accent state automatically. */
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: 0 0 auto;
+}
+
 .icon-btn {
   background: transparent;
   border: none;
   color: var(--text-dim);
   font-size: 1rem;
   padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   flex: 0 0 auto;
 }
 .icon-btn:hover { color: var(--accent); }
+.key-progress { font-size: 0.7rem; }
 .tempo-chip {
   width: 52px;
   background: var(--bg);
@@ -134,6 +153,10 @@ button {
 }
 .mode-btn {
   flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   background: var(--panel);
   border: 1px solid var(--panel-border);
   color: var(--text);
@@ -155,6 +178,9 @@ button {
 
 .status-line {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--accent);
   font-size: 0.8rem;
   font-weight: 600;
@@ -334,7 +360,15 @@ button {
   padding: 12px 4px;
 }
 .rail-btn.active { color: var(--accent-strong); border-left-color: var(--accent-strong); background: rgba(127, 216, 190, 0.08); }
-.rail-icon { font-size: 1.2rem; }
+.rail-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .rail-label { font-size: 0.68rem; }
 
 /* Upload panel (sheet modal) */
@@ -413,6 +447,74 @@ button {
   max-width: 90vw;
   z-index: 60;
 }
+
+/* History view -- a static, read-only list of past Analyze Me sessions;
+   nothing here live-updates while it's on screen. */
+.history-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.history-content h3 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 14px 0 6px;
+}
+.history-content h3:first-child { margin-top: 0; }
+
+.history-problems {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.history-problems ol { margin: 0; padding-left: 20px; }
+.history-problems li { margin-bottom: 4px; }
+.problem-count { color: var(--text-dim); font-size: 0.75rem; margin-left: 4px; }
+
+.history-sessions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.history-session {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.history-session-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.history-song-title { font-weight: 600; }
+.history-date { color: var(--text-dim); font-size: 0.78rem; margin-left: auto; }
+.history-session-stats { display: flex; gap: 14px; color: var(--text-dim); font-size: 0.78rem; margin-top: 6px; }
+.history-session-lines { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.history-session-lines span {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  border-left: 3px solid transparent;
+}
+.history-session-lines .rated-off { border-left-color: var(--warn); }
+.history-session-lines .rated-miss { border-left-color: var(--bad); }
+
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #062018;
+  background: var(--text-dim);
+  flex: 0 0 auto;
+}
+.grade-badge.grade-a { background: var(--accent-strong); }
+.grade-badge.grade-b { background: var(--accent); }
+.grade-badge.grade-c { background: var(--warn); color: #2b1d00; }
+.grade-badge.grade-d { background: var(--warn); color: #2b1d00; }
+.grade-badge.grade-f { background: var(--bad); color: #fff; }
 
 @media (max-width: 480px) {
   .tuner-note { font-size: 2.2rem; }

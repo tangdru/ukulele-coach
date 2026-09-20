@@ -7,17 +7,79 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+<!-- Shared outline-icon set (stroke = currentColor, so every icon follows
+     its button's text/accent color automatically) -- referenced by <use>
+     everywhere an icon appears, so there's exactly one definition of each
+     shape to keep the style consistent. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="icon-upload" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24">
+      <polygon points="6 3 20 12 6 21 6 3" />
+    </symbol>
+    <symbol id="icon-music" viewBox="0 0 24 24">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </symbol>
+    <symbol id="icon-target" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </symbol>
+    <symbol id="icon-key" viewBox="0 0 24 24">
+      <circle cx="7" cy="15" r="4" />
+      <path d="M10.5 11.5 20 2" />
+      <path d="M16 6l3 3" />
+      <path d="M13 9l3 3" />
+    </symbol>
+    <symbol id="icon-pulse" viewBox="0 0 24 24">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </symbol>
+    <symbol id="icon-stop" viewBox="0 0 24 24">
+      <rect x="5" y="5" width="14" height="14" rx="1.5" />
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </symbol>
+    <symbol id="icon-headphones" viewBox="0 0 24 24">
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+      <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+    </symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 16 14" />
+    </symbol>
+  </defs>
+</svg>
+
 <div id="app">
 
   <nav class="rail" aria-label="Navigation">
     <button id="railUpload" class="rail-btn" data-view="upload" type="button" title="Upload">
-      <span class="rail-icon">📁</span><span class="rail-label">Upload</span>
+      <svg class="rail-icon" aria-hidden="true"><use href="#icon-upload" /></svg><span class="rail-label">Upload</span>
     </button>
     <button id="railPlay" class="rail-btn active" data-view="play" type="button" title="Play">
-      <span class="rail-icon">▶</span><span class="rail-label">Play</span>
+      <svg class="rail-icon" aria-hidden="true"><use href="#icon-play" /></svg><span class="rail-label">Play</span>
     </button>
     <button id="railTuner" class="rail-btn" data-view="tuner" type="button" title="Tuner">
-      <span class="rail-icon">🎵</span><span class="rail-label">Tuner</span>
+      <svg class="rail-icon" aria-hidden="true"><use href="#icon-music" /></svg><span class="rail-label">Tuner</span>
+    </button>
+    <button id="railHistory" class="rail-btn" data-view="history" type="button" title="History">
+      <svg class="rail-icon" aria-hidden="true"><use href="#icon-history" /></svg><span class="rail-label">History</span>
     </button>
   </nav>
 
@@ -26,9 +88,9 @@
     <header class="topbar">
       <span id="songTitle" class="song-title">No song loaded</span>
       <span id="keyDisplay" class="meta-chip" title="Key">&mdash;</span>
-      <button id="detectKeyBtn" class="icon-btn" type="button" title="Detect key from mic">🔑</button>
+      <button id="detectKeyBtn" class="icon-btn" type="button" title="Detect key from mic"><svg class="icon" aria-hidden="true"><use href="#icon-key" /></svg><span id="detectKeyProgress" class="key-progress"></span></button>
       <input id="tempoInput" class="tempo-chip" type="number" min="30" max="240" value="90" title="Tempo (BPM)" />
-      <button id="tapTempoBtn" class="icon-btn" type="button" title="Tap tempo">👆</button>
+      <button id="tapTempoBtn" class="icon-btn" type="button" title="Tap tempo"><svg class="icon" aria-hidden="true"><use href="#icon-pulse" /></svg></button>
       <span id="timeSigDisplay" class="meta-chip" title="Time signature">4/4</span>
     </header>
 
@@ -36,16 +98,16 @@
 
       <section id="view-play" class="view">
         <div class="play-modes">
-          <button id="modeMetronomeBtn" class="mode-btn" type="button">▶ Metronome</button>
-          <button id="modeFollowBtn" class="mode-btn" type="button">🎤 Follow Me</button>
-          <button id="modeAnalyzeBtn" class="mode-btn" type="button">🎯 Analyze Me</button>
-          <button id="stopBtn" class="mode-btn stop-btn" type="button">■ Stop</button>
+          <button id="modeMetronomeBtn" class="mode-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-play" /></svg> Metronome</button>
+          <button id="modeFollowBtn" class="mode-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-mic" /></svg> Follow Me</button>
+          <button id="modeAnalyzeBtn" class="mode-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-target" /></svg> Analyze Me</button>
+          <button id="stopBtn" class="mode-btn stop-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-stop" /></svg> Stop</button>
           <label class="scroll-toggle">
             <input type="checkbox" id="autoScrollToggle" checked />
             Auto-scroll
           </label>
         </div>
-        <p id="followStatus" class="status-line hidden"></p>
+        <p id="followStatus" class="status-line hidden"><svg class="icon" aria-hidden="true"><use href="#icon-headphones" /></svg> <span id="followStatusText"></span></p>
         <div id="analyzeStats" class="status-line rhythm-stats hidden">
           <span class="stat"><span id="statOnTime" class="stat-value">&mdash;</span><span class="stat-label">on-time</span></span>
           <span class="stat"><span id="statAvgMs" class="stat-value">&mdash;</span><span class="stat-label">avg ms off</span></span>
@@ -55,12 +117,12 @@
           </span>
         </div>
         <div id="songView" class="song-view">
-          <p class="empty-hint">Tap 📁 to load a song.</p>
+          <p class="empty-hint">Tap <svg class="icon" aria-hidden="true"><use href="#icon-upload" /></svg> to load a song.</p>
         </div>
       </section>
 
       <section id="view-tuner" class="view hidden">
-        <button id="tunerToggleBtn" class="mode-btn" type="button">🎤 Start Tuner</button>
+        <button id="tunerToggleBtn" class="mode-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-mic" /></svg> <span id="tunerToggleLabel">Start Tuner</span></button>
         <div class="tuner-display">
           <div id="tunerNote" class="tuner-note">&mdash;</div>
           <div class="tuner-meter">
@@ -69,6 +131,12 @@
           </div>
           <div id="tunerCents" class="tuner-cents"></div>
           <div id="tunerString" class="tuner-string-hint"></div>
+        </div>
+      </section>
+
+      <section id="view-history" class="view hidden">
+        <div id="historyContent" class="history-content">
+          <p class="empty-hint">No Analyze Me sessions recorded yet — run Analyze Me, then Stop, to save your first grade.</p>
         </div>
       </section>
 
@@ -81,7 +149,7 @@
     <div class="sheet-modal-content">
       <div class="sheet-modal-header">
         <span>Load a song</span>
-        <button id="closeUploadBtn" class="icon-btn" type="button" aria-label="Close">✕</button>
+        <button id="closeUploadBtn" class="icon-btn" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#icon-x" /></svg></button>
       </div>
 
       <input id="songSearch" class="song-search" type="text" list="songDatalist" placeholder="Search songs…" autocomplete="off" />
@@ -118,6 +186,7 @@
 <script src="js/chords-baritone.js"></script>
 <script src="js/songs.js"></script>
 <script src="js/songlibrary.js"></script>
+<script src="js/sessionhistory.js"></script>
 <script src="js/metronome.js"></script>
 <script src="js/tuner.js"></script>
 <script src="js/keydetect.js"></script>
