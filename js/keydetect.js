@@ -58,8 +58,8 @@ class KeyDetector {
   _loop() {
     if (!this.running) return;
     this.analyser.getFloatTimeDomainData(this.buf);
-    const { freq, clarity } = autoCorrelate(this.buf, this.ctx.sampleRate);
-    if (freq > 0 && clarity >= 0.85) {
+    const freq = autoCorrelate(this.buf, this.ctx.sampleRate);
+    if (freq > 0) {
       const midi = Math.round(69 + 12 * Math.log2(freq / 440));
       const pc = ((midi % 12) + 12) % 12;
       this.chroma[pc]++;
