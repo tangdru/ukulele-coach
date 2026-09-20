@@ -4,7 +4,7 @@ A browser-based practice companion for baritone ukulele (tuned D G B E, the
 same as a guitar's top 4 strings). No build step, no framework, no account —
 open `index.html` (served, not `file://`, so the microphone works) and go.
 
-**Live (once GitHub Pages is enabled for this repo):** `https://tangdru.github.io/ukulele-coach/`
+**Live:** `https://tangdru.github.io/ukulele-coach/`
 
 ## What it does
 
@@ -30,7 +30,18 @@ open `index.html` (served, not `file://`, so the microphone works) and go.
   Tap any line to jump the playback position there. Auto-scroll can be
   toggled off if you just want the beat and manual scrolling.
 - **Tuner** — continuous pitch detection (autocorrelation) with a note name,
-  cents-off needle, and nearest-open-string hint (D3/G3/B3/E4).
+  cents-off needle, and nearest-open-string hint (D3/G3/B3/E4). It requests
+  the mic with echo cancellation, noise suppression, and auto gain control
+  all disabled (browsers default these on for voice calls, and they
+  actively fight clean pitch detection — auto gain control in particular
+  will ramp a sustained tone's level down over time). Readings only count
+  when the signal is a strong, clean, sustained tone in the instrument's
+  practical range (110–900Hz) — this can't distinguish a string from a
+  sung note at the same pitch (nothing short of a real instrument-timbre
+  classifier can), but it does reject background noise, taps, and
+  chatter. A note only updates the display once it's held steady for a
+  few frames, and its cents reading is smoothed, so the needle settles
+  instead of jittering frame-to-frame.
 - **Key** — read from the chart's `{key: ...}` directive, or tap "Detect
   from mic" to listen for 6 seconds and estimate the key via a chroma
   histogram + Krumhansl-Schmuckler key-profile correlation.
@@ -106,15 +117,22 @@ reading PDF text, and [mammoth.js](https://github.com/mwilliamson/mammoth.js)
 
 ## Testing
 
-`smoke_test.mjs`, `smoke_test_mic.mjs`, and `smoke_test_import.mjs` are
-Playwright scripts (not part of the served app) that load the page in
-headless Chromium and click through song loading, chord diagrams,
-scrolling playback, the mic-gated tuner/rhythm-coach/key-detect flows
-(using Chromium's fake audio device), and PDF/Word lead sheet import.
-Run a static server first, then:
+`smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`, and
+`smoke_test_tuner.mjs` are Playwright scripts (not part of the served app)
+that load the page in headless Chromium and click through song loading,
+chord diagrams, scrolling playback, the mic-gated tuner/rhythm-coach/
+key-detect flows (using Chromium's fake audio device), and PDF/Word lead
+sheet import. `smoke_test_tuner.mjs` goes a step further than "does it
+start without errors": it feeds the fake audio device a real synthesized
+tone (via `gen_test_tone.mjs`, a small dependency-free WAV writer) and
+asserts the tuner actually, correctly, stably identifies it, plus a
+separate run with white noise asserting it correctly stays blank — this
+is what caught both the auto-gain-control issue and a note-confirmation
+logic bug during development. Run a static server first, then:
 
 ```
 node smoke_test.mjs
 node smoke_test_mic.mjs
+node smoke_test_tuner.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

@@ -36,7 +36,15 @@
     if (micStream) return true;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Browsers default to voice-call-oriented processing -- echo
+      // cancellation, noise suppression, automatic gain control -- which
+      // actively fights clean pitch detection (AGC in particular ramps
+      // gain down on a sustained tone, and noise suppression can mistake
+      // a steady instrument tone for stationary noise to remove). Ask for
+      // the raw signal instead.
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
       micSource = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 2048;
