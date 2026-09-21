@@ -45,6 +45,22 @@ below are the explanations, kept in this README instead of on screen.
   each onto the lyric line below it as inline ChordPro chords. This is a
   heuristic, not exact, so the result is shown in the paste box for you to
   check and fix before loading — see limitations below.
+- **iReal Pro import** — paste an iReal Pro chord chart link
+  (`irealb://…` / `irealbook://…`) into the paste box, or upload the
+  `.html`/`.txt` file iReal Pro's Share sheet produces, and it's decoded
+  into the same ChordPro-ish text everything else here understands —
+  chord qualities (`^`, `-`, `o`, `ø`/`h`, `+`, altered extensions),
+  section markers, and 1st/2nd endings all translate over. iReal Pro
+  charts are bars of changes with **no lyrics at all**, a genuinely
+  different shape than this app's chord-over-lyric charts, so each bar
+  renders as `[Chord]|` — the barline stands in for the lyric line a
+  chord would otherwise be anchored to. Like PDF/Word import, the result
+  lands in the paste box for a look before Load, never straight in — this
+  is a community-reverse-engineered format (iReal Pro doesn't publish an
+  official spec), verified against the documented grammar and a real
+  example chart, but an exotic real-world export could still convert
+  imperfectly. Only the first song converts out of a multi-song playlist
+  link.
 - **Baritone chord diagrams** — fingerings are *computed*, not hand-typed:
   each chord symbol is parsed into a root + interval set, and the app
   searches fret positions on the D/G/B/E strings for a valid voicing
@@ -181,7 +197,8 @@ library's database.
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
-`smoke_test_library.mjs`, and `smoke_test_history.mjs` are Playwright scripts (not part of the
+`smoke_test_library.mjs`, `smoke_test_history.mjs`, and `smoke_test_ireal.mjs`
+are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -201,9 +218,14 @@ song is still there in the search list and loadable by name;
 `smoke_test_history.mjs` runs a sloppy-timing Analyze Me session, stops
 it, and asserts a graded entry with the specific off/missed lines shows
 up in the History view, survives a real reload, and a second run adds a
-second entry rather than replacing the first -- in this
-project's own CI/sandbox, Supabase is unreachable, so both of these
-specifically exercise the localStorage fallback path (`test_helpers.mjs`
+second entry rather than replacing the first; `smoke_test_ireal.mjs`
+pastes a real iReal Pro chord-chart link (a well-known jazz standard, taken
+from iReal Pro's own protocol documentation), confirms it converts to
+ChordPro for review rather than loading straight in, then loads it and
+checks the chord count, a real fingering diagram, the same conversion via
+an uploaded file, and a clean error for an unparseable link -- in this
+project's own CI/sandbox, Supabase is unreachable, so the two library/history
+tests specifically exercise the localStorage fallback path (`test_helpers.mjs`
 filters those expected network failures out of each test's error checks;
 see its comments). Run a static server first, then:
 
@@ -215,5 +237,6 @@ node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
 node smoke_test_library.mjs
 node smoke_test_history.mjs
+node smoke_test_ireal.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

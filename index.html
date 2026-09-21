@@ -156,13 +156,13 @@
       <datalist id="songDatalist"></datalist>
 
       <div class="upload-row">
-        <label for="chordproFile" class="file-label secondary-btn">Upload file (.cho/.txt/.pdf/.docx)</label>
-        <input type="file" id="chordproFile" accept=".cho,.chopro,.pro,.txt,.pdf,.docx,.doc" class="hidden" />
+        <label for="chordproFile" class="file-label secondary-btn">Upload file (.cho/.txt/.pdf/.docx/.html)</label>
+        <input type="file" id="chordproFile" accept=".cho,.chopro,.pro,.txt,.pdf,.docx,.doc,.html" class="hidden" />
         <button id="togglePasteBtn" class="secondary-btn" type="button">Paste chords instead</button>
       </div>
       <div id="importStatus" class="import-status hidden"></div>
       <div id="pasteArea" class="paste-area hidden">
-        <textarea id="pasteText" rows="8" placeholder="{title: My Song}&#10;{key: G}&#10;{tempo: 100}&#10;[G]Some lyrics [D]here..."></textarea>
+        <textarea id="pasteText" rows="8" placeholder="{title: My Song}&#10;{key: G}&#10;{tempo: 100}&#10;[G]Some lyrics [D]here...&#10;&#10;...or paste an iReal Pro link (irealb:// / irealbook://)"></textarea>
         <button id="loadPastedBtn" class="primary-btn" type="button">Load</button>
       </div>
     </div>
@@ -194,6 +194,7 @@
 <script src="js/rhythm.js"></script>
 <script src="js/followscroll.js"></script>
 <script src="js/leadsheet-import.js"></script>
+<script src="js/ireal-import.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
