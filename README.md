@@ -45,6 +45,16 @@ below are the explanations, kept in this README instead of on screen.
   each onto the lyric line below it as inline ChordPro chords. This is a
   heuristic, not exact, so the result is shown in the paste box for you to
   check and fix before loading — see limitations below.
+- **Zoom / fit to screen** — a small floating control in the corner of the
+  chart lets you shrink or enlarge the text (`−`/`+`), or tap the fit icon
+  to auto-shrink until the widest line on screen no longer needs
+  horizontal scrolling (clamped to a minimum readable size — it won't
+  shrink text into illegibility on a pathologically wide line, and stops
+  short of a perfect fit rather than doing that). Tapping fit again on a
+  chart that already fits snaps back to the default size instead of
+  zooming in further. Chords are positioned in the same unit (`ch`) the
+  font itself scales in, so they stay correctly aligned at any zoom level.
+  Resets to the default size whenever a new song loads.
 - **Baritone chord diagrams** — fingerings are *computed*, not hand-typed:
   each chord symbol is parsed into a root + interval set, and the app
   searches fret positions on the D/G/B/E strings for a valid voicing
@@ -181,7 +191,8 @@ library's database.
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
-`smoke_test_library.mjs`, and `smoke_test_history.mjs` are Playwright scripts (not part of the
+`smoke_test_library.mjs`, `smoke_test_history.mjs`, and `smoke_test_zoom.mjs`
+are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -201,11 +212,15 @@ song is still there in the search list and loadable by name;
 `smoke_test_history.mjs` runs a sloppy-timing Analyze Me session, stops
 it, and asserts a graded entry with the specific off/missed lines shows
 up in the History view, survives a real reload, and a second run adds a
-second entry rather than replacing the first -- in this
-project's own CI/sandbox, Supabase is unreachable, so both of these
-specifically exercise the localStorage fallback path (`test_helpers.mjs`
-filters those expected network failures out of each test's error checks;
-see its comments). Run a static server first, then:
+second entry rather than replacing the first; `smoke_test_zoom.mjs`
+checks that the zoom buttons actually resize the chart (chords included,
+without drifting out of alignment), that Fit to Screen eliminates
+horizontal overflow on a wide line without crossing the minimum-readable
+floor, and that zoom resets on a new song load -- in this
+project's own CI/sandbox, Supabase is unreachable, so the library/history
+tests specifically exercise the localStorage fallback path
+(`test_helpers.mjs` filters those expected network failures out of each
+test's error checks; see its comments). Run a static server first, then:
 
 ```
 node smoke_test.mjs
@@ -215,5 +230,6 @@ node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
 node smoke_test_library.mjs
 node smoke_test_history.mjs
+node smoke_test_zoom.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```
