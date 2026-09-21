@@ -55,11 +55,17 @@ below are the explanations, kept in this README instead of on screen.
 - **Three equal-weight play modes** (Play view, above the chart):
   - **▶ Metronome** — a Web-Audio-scheduled metronome at the song's tempo,
     auto-scrolling/highlighting the chart line by line on that fixed
-    clock, whether or not you're actually keeping up.
+    clock, whether or not you're actually keeping up. Also highlights the
+    specific chord the clock says should be playing right now within that
+    line (holding on a chord across several beats until the next one is
+    due, rather than needing exactly one chord per beat).
   - **🎤 Follow Me** — listens through the mic (onset/strum detection) and
     only advances to the next line once it's heard enough strums to match
     that line's beat count, so the chart genuinely tracks your pace
-    instead of assuming you're locked to the tempo dial.
+    instead of assuming you're locked to the tempo dial. Highlights the
+    chord your strums say you're currently on, advancing only in response
+    to real detected playing — it stays put through silence, never on a
+    clock of its own.
   - **🎯 Analyze Me** — runs the metronome (needed as the timing reference)
     *and* listens, scoring each strum against the nearest beat and
     marking it directly on the chart: a colored left border on the line
@@ -69,7 +75,10 @@ below are the explanations, kept in this README instead of on screen.
     chord order within the line). A compact on-time% / avg-ms-off / strum
     count row tracks the running session. Marks stay on the chart after
     Stop so you can review the whole run; a fresh Analyze Me run or a new
-    song load clears them.
+    song load clears them. Also highlights, same as Metronome mode, the
+    chord the fixed clock says you should be playing right now — so a
+    glance shows both *what to play next* and *how the last few chords
+    actually went*, at once.
 - **Practice history, graded** — every Analyze Me run you finish (Stop,
   switching modes, loading a new song, or letting it run to the end of the
   chart all count as "finishing") is graded A–F from its on-time
@@ -108,7 +117,12 @@ uke, so they can pick up other sharp sounds too, and a very soft or
 sustained strum might not register as a distinct onset. Both assume one
 detected onset per beat, which matches strumming a chord once per beat
 but not other rhythms (fingerpicking multiple notes per beat, sustained
-whole-line chords, etc.).
+whole-line chords, etc.). The mic is requested with echo cancellation,
+noise suppression, and auto-gain control all explicitly turned off —
+browser defaults enable all three for voice calls, and they can damp a
+strum's sharp attack (or let auto-gain-boosted room noise drift into
+false onsets) enough to make onset detection feel disconnected from
+actual playing.
 
 ## What it deliberately doesn't do
 
@@ -181,7 +195,8 @@ library's database.
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
-`smoke_test_library.mjs`, and `smoke_test_history.mjs` are Playwright scripts (not part of the
+`smoke_test_library.mjs`, `smoke_test_history.mjs`, and `smoke_test_playhead.mjs`
+are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -201,11 +216,17 @@ song is still there in the search list and loadable by name;
 `smoke_test_history.mjs` runs a sloppy-timing Analyze Me session, stops
 it, and asserts a graded entry with the specific off/missed lines shows
 up in the History view, survives a real reload, and a second run adds a
-second entry rather than replacing the first -- in this
-project's own CI/sandbox, Supabase is unreachable, so both of these
-specifically exercise the localStorage fallback path (`test_helpers.mjs`
-filters those expected network failures out of each test's error checks;
-see its comments). Run a static server first, then:
+second entry rather than replacing the first; `smoke_test_playhead.mjs`
+checks the current-chord playhead: it advances on the clock alone in
+Metronome mode, it never advances through several seconds of true
+silence in Follow Me (this is the direct regression test for "Follow Me
+just plays through like Metronome" -- it feeds a mostly-silent WAV and
+asserts the highlighted chord and active line never move), and it does
+advance once real strum bursts land -- in this
+project's own CI/sandbox, Supabase is unreachable, so the library/history
+tests specifically exercise the localStorage fallback path
+(`test_helpers.mjs` filters those expected network failures out of each
+test's error checks; see its comments). Run a static server first, then:
 
 ```
 node smoke_test.mjs
@@ -215,5 +236,6 @@ node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
 node smoke_test_library.mjs
 node smoke_test_history.mjs
+node smoke_test_playhead.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

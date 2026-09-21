@@ -44,7 +44,15 @@
     if (micStream) return true;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Browser defaults enable echo cancellation, noise suppression, and
+      // auto-gain control -- all tuned for voice calls, and all liable to
+      // dampen a strum's sharp transient (the very thing onset/pitch
+      // detection looks for) or, worse, let AGC-boosted room noise drift
+      // into false onsets. Every feature here (Tuner, Key detection,
+      // Follow Me, Analyze Me) wants the raw signal instead.
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
       micSource = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 2048;
@@ -299,6 +307,25 @@
     setTimeout(rhythmStatsLoop, 400);
   }
 
+  // ---------- Current-chord "playhead" (Follow Me: what you're playing; Metronome/Analyze Me: what you should be) ----------
+
+  let currentChordEl = null;
+
+  function setCurrentChord(lineIdx, chordIdx) {
+    const line = flatLines[lineIdx];
+    const chordEls = line ? line.querySelectorAll('.chord-sym') : [];
+    const target = chordEls.length ? chordEls[Math.max(0, Math.min(chordIdx, chordEls.length - 1))] : null;
+    if (target === currentChordEl) return;
+    if (currentChordEl) currentChordEl.classList.remove('current-chord');
+    currentChordEl = target || null;
+    if (currentChordEl) currentChordEl.classList.add('current-chord');
+  }
+
+  function clearCurrentChord() {
+    if (currentChordEl) currentChordEl.classList.remove('current-chord');
+    currentChordEl = null;
+  }
+
   function highlightLoop() {
     if (!scrollActive) return;
     const now = audioCtx.currentTime;
@@ -315,6 +342,17 @@
           flatLines[activeLineIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
+    }
+    // Playhead: which chord the fixed clock says should be playing right
+    // now within the active line -- same "Nth beat -> Nth chord" mapping
+    // Analyze Me's scoring already uses, so a chord that holds across
+    // several beats just keeps the highlight rather than needing one
+    // chord per beat.
+    if (idx >= 0) {
+      const bpm = parseInt($('tempoInput').value, 10) || 90;
+      const secondsPerBeat = 60 / bpm;
+      const beatsIntoLine = Math.floor((now - lineStartTimes[idx]) / secondsPerBeat);
+      setCurrentChord(idx, beatsIntoLine);
     }
     if (idx >= lineStartTimes.length - 1 && now > lineStartTimes[lineStartTimes.length - 1] + 2) {
       stopScroll();
@@ -335,6 +373,7 @@
     // fresh scored Play, or loading a new song, clears them.
     flatLines.forEach((el) => el.classList.remove('active-line'));
     activeLineIndex = -1;
+    clearCurrentChord();
     setActiveMode(null);
   }
 
@@ -356,6 +395,7 @@
       activeLineIndex = idx;
       if (followScroll) followScroll.strumCount = 0;
       updateFollowStatus(0, beatsPerLine());
+      setCurrentChord(idx, 0);
     }
   }
 
@@ -374,13 +414,21 @@
 
     followScroll = followScroll || new FollowScroll(audioCtx, analyser, beatsPerLine());
     followScroll.setBeatsPerLine(beatsPerLine());
-    followScroll.onOnset = (count, total) => updateFollowStatus(count, total);
+    followScroll.onOnset = (count, total) => {
+      updateFollowStatus(count, total);
+      // The chord the player just played -- count is 1 after the first
+      // strum, so it points at chord index 0, matching setCurrentChord's
+      // own clamping for whatever's left once strums run past the chord
+      // count on a line that holds a chord across several beats.
+      setCurrentChord(activeLineIndex, count - 1);
+    };
     followScroll.onAdvance = advanceFollowLine;
 
     flatLines.forEach((el) => el.classList.remove('active-line'));
     activeLineIndex = 0;
     if (flatLines[0]) flatLines[0].classList.add('active-line');
     updateFollowStatus(0, beatsPerLine());
+    setCurrentChord(0, 0);
 
     followScroll.start();
     followActive = true;
@@ -403,6 +451,7 @@
     }
     followScroll.setBeatsPerLine(beatsPerLine());
     updateFollowStatus(0, beatsPerLine());
+    setCurrentChord(activeLineIndex, 0);
   }
 
   function stopFollow() {
@@ -411,6 +460,7 @@
     $('followStatus').classList.add('hidden');
     flatLines.forEach((el) => el.classList.remove('active-line'));
     activeLineIndex = -1;
+    clearCurrentChord();
     setActiveMode(null);
   }
 

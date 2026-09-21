@@ -257,6 +257,16 @@ button {
 .chord-sym.rated-off { box-shadow: 0 2px 0 0 var(--warn); }
 .chord-sym.rated-miss { box-shadow: 0 2px 0 0 var(--bad); }
 
+/* The "playhead" chord: in Follow Me, the chord the player's strums say
+   they're on; in Metronome/Analyze Me, the chord the fixed clock says
+   should be playing right now. A filled pill rather than the rated-*
+   underline so the two can coexist on the same chord without conflict --
+   this shows *now*, rated-* shows *how a past hit went*. */
+.chord-sym.current-chord {
+  background: var(--accent-strong);
+  color: #062018;
+}
+
 .score-legend { display: inline-flex; gap: 3px; margin-left: auto; }
 .legend-swatch {
   display: inline-block;
