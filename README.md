@@ -74,7 +74,14 @@ below are the explanations, kept in this README instead of on screen.
     clock, whether or not you're actually keeping up. Also highlights the
     specific chord the clock says should be playing right now within that
     line (holding on a chord across several beats until the next one is
-    due, rather than needing exactly one chord per beat).
+    due, rather than needing exactly one chord per beat), and softly
+    strums that chord's actual computed baritone voicing along with the
+    click — the same fingering math behind the chord diagrams, so it's a
+    real, correct-for-the-instrument backing to play over, not a generic
+    pad. There's no melody in a ChordPro chart (chords + lyrics only), so
+    this plays the harmony under the tune, not the tune itself — meant as
+    the listen-and-play-along first step before Analyze Me (practice with
+    feedback) and Follow Me (no net).
   - **🎤 Follow Me** — listens through the mic (onset/strum detection) and
     only advances to the next line once it's heard enough strums to match
     that line's beat count, so the chart genuinely tracks your pace
@@ -215,8 +222,8 @@ library's database.
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
 `smoke_test_library.mjs`, `smoke_test_history.mjs`, `smoke_test_playhead.mjs`,
-`smoke_test_hscroll.mjs`, and `smoke_test_ireal.mjs` are Playwright scripts
-(not part of the
+`smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`, and `smoke_test_backing.mjs`
+are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -250,7 +257,13 @@ pastes a real iReal Pro chord-chart link (a well-known jazz standard, taken
 from iReal Pro's own protocol documentation), confirms it converts to
 ChordPro for review rather than loading straight in, then loads it and
 checks the chord count, a real fingering diagram, the same conversion via
-an uploaded file, and a clean error for an unparseable link -- in this
+an uploaded file, and a clean error for an unparseable link;
+`smoke_test_backing.mjs` instruments
+`AudioContext.createOscillator` from inside the page (headless Chromium
+can't literally be listened to) and asserts Metronome mode schedules real
+chord-tone notes -- not just the click -- once per beat, matching the
+actual voicing the chord diagrams would show, and that none of that
+plays during Analyze Me -- in this
 project's own CI/sandbox, Supabase is unreachable, so the library/history
 tests specifically exercise the localStorage fallback path (`test_helpers.mjs`
 filters those expected network failures out of each test's error checks;
@@ -267,5 +280,6 @@ node smoke_test_history.mjs
 node smoke_test_playhead.mjs
 node smoke_test_hscroll.mjs
 node smoke_test_ireal.mjs
+node smoke_test_backing.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```
