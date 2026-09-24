@@ -633,7 +633,12 @@
       }
       $('tunerNote').textContent = `${info.noteName}${info.octave}`;
       $('tunerCents').textContent = (info.cents > 0 ? '+' : '') + info.cents + ' cents';
-      $('tunerString').textContent = `Nearest baritone string: ${info.nearestString.name}`;
+      // sax-testing branch: the "nearest baritone string" hint doesn't mean
+      // anything on a non-string instrument, and would be actively
+      // misleading here (e.g. showing "G3" while a concert G4 plays) --
+      // pitch detection itself is instrument-agnostic, so note name + cents
+      // is exactly what's needed to validate it against a real sax.
+      $('tunerString').textContent = '';
       const angle = Math.max(-45, Math.min(45, info.cents * 0.9));
       $('tunerNeedle').style.transform = `translateX(-50%) rotate(${angle}deg)`;
       $('tunerNeedle').classList.toggle('in-tune', Math.abs(info.cents) <= 5);
