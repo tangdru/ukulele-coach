@@ -690,12 +690,26 @@
 
   $('loadPastedBtn').addEventListener('click', () => {
     const text = $('pasteText').value.trim();
-    if (text) {
-      loadSong(text);
-      $('pasteText').value = '';
-      $('pasteArea').classList.add('hidden');
-      setImportStatus('');
+    if (!text) return;
+
+    // An iReal Pro link pasted in here isn't ChordPro text -- convert it
+    // first and land the result back in this same box for a look before
+    // Load, same "never load a converted chart silently" rule as PDF/Word.
+    if (isIRealText(text)) {
+      try {
+        $('pasteText').value = convertIRealToChordPro(text);
+        setImportStatus('Converted from iReal Pro — review before Load (bars-only, no lyrics; placement is best-effort).');
+      } catch (err) {
+        setImportStatus('');
+        showError(`Couldn't convert that iReal Pro link: ${err.message || err}`, 9000);
+      }
+      return;
     }
+
+    loadSong(text);
+    $('pasteText').value = '';
+    $('pasteArea').classList.add('hidden');
+    setImportStatus('');
   });
 
   function setImportStatus(msg) {
@@ -731,7 +745,26 @@
     }
 
     const reader = new FileReader();
-    reader.onload = () => loadSong(String(reader.result));
+    reader.onload = () => {
+      const text = String(reader.result);
+      // iReal Pro exports are usually shared as a .html or .txt file
+      // wrapping the irealb://... link -- content-sniffed here rather than
+      // by extension, since that link can show up in either. Converted and
+      // shown for review, same as PDF/Word, never loaded straight in.
+      if (isIRealText(text)) {
+        try {
+          $('pasteText').value = convertIRealToChordPro(text);
+          $('pasteArea').classList.remove('hidden');
+          setImportStatus(`Converted from ${file.name} — review before Load (bars-only, no lyrics; placement is best-effort).`);
+          $('pasteText').focus();
+        } catch (err) {
+          setImportStatus('');
+          showError(`Couldn't convert ${file.name}: ${err.message || err}`, 9000);
+        }
+        return;
+      }
+      loadSong(text);
+    };
     reader.readAsText(file);
     e.target.value = '';
   });
