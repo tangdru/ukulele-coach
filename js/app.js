@@ -318,7 +318,30 @@
     if (target === currentChordEl) return;
     if (currentChordEl) currentChordEl.classList.remove('current-chord');
     currentChordEl = target || null;
-    if (currentChordEl) currentChordEl.classList.add('current-chord');
+    if (currentChordEl) {
+      currentChordEl.classList.add('current-chord');
+      scrollChordHorizontallyIntoView(currentChordEl);
+    }
+  }
+
+  // Auto-scroll's existing scrollIntoView calls (on the *line*) only
+  // center vertically -- a chord partway across a line too wide for the
+  // viewport (a long lyric line, or anything zoomed out) can still sit off
+  // to the side. This nudges #songView's own horizontal scroll, on the
+  // *chord*, whenever the playhead moves somewhere not already visible --
+  // a plain scrollBy rather than the element's own scrollIntoView, so it
+  // can't fight the line's vertical centering by also moving vertically.
+  function scrollChordHorizontallyIntoView(chordEl) {
+    if (!$('autoScrollToggle').checked) return;
+    const view = $('songView');
+    const viewRect = view.getBoundingClientRect();
+    const chordRect = chordEl.getBoundingClientRect();
+    const margin = 24;
+    if (chordRect.left < viewRect.left + margin) {
+      view.scrollBy({ left: chordRect.left - viewRect.left - margin, behavior: 'smooth' });
+    } else if (chordRect.right > viewRect.right - margin) {
+      view.scrollBy({ left: chordRect.right - viewRect.right + margin, behavior: 'smooth' });
+    }
   }
 
   function clearCurrentChord() {

@@ -94,9 +94,12 @@ below are the explanations, kept in this README instead of on screen.
 
   Tap any line to jump there in any mode; auto-scroll can be toggled off
   if you just want the beat/line tracking without the page moving under
-  you. Follow Me and Analyze Me don't combine — Analyze Me needs the
-  metronome's fixed clock to score against, which is exactly what Follow
-  Me deliberately doesn't run.
+  you. It scrolls both ways — vertically to keep the active line centered,
+  and horizontally to keep the current playhead chord in view on a line
+  too wide for the screen, rather than just centering the line and leaving
+  later chords on it off past the edge. Follow Me and Analyze Me don't
+  combine — Analyze Me needs the metronome's fixed clock to score against,
+  which is exactly what Follow Me deliberately doesn't run.
 - **Tuner** — continuous pitch detection (autocorrelation) with a note name,
   cents-off needle, and nearest-open-string hint (D3/G3/B3/E4). It picks up
   any clear pitch in range, not just a baritone uke specifically — a pitch
@@ -195,8 +198,8 @@ library's database.
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
-`smoke_test_library.mjs`, `smoke_test_history.mjs`, and `smoke_test_playhead.mjs`
-are Playwright scripts (not part of the
+`smoke_test_library.mjs`, `smoke_test_history.mjs`, `smoke_test_playhead.mjs`,
+and `smoke_test_hscroll.mjs` are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -222,7 +225,10 @@ Metronome mode, it never advances through several seconds of true
 silence in Follow Me (this is the direct regression test for "Follow Me
 just plays through like Metronome" -- it feeds a mostly-silent WAV and
 asserts the highlighted chord and active line never move), and it does
-advance once real strum bursts land -- in this
+advance once real strum bursts land; `smoke_test_hscroll.mjs` checks
+that auto-scroll follows the playhead chord horizontally on a line too
+wide for the viewport, and that it does neither axis of scrolling with
+Auto-scroll unchecked -- in this
 project's own CI/sandbox, Supabase is unreachable, so the library/history
 tests specifically exercise the localStorage fallback path
 (`test_helpers.mjs` filters those expected network failures out of each
@@ -237,5 +243,6 @@ node smoke_test_scoring.mjs
 node smoke_test_library.mjs
 node smoke_test_history.mjs
 node smoke_test_playhead.mjs
+node smoke_test_hscroll.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```
