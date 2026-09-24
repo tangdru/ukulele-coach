@@ -34,6 +34,10 @@ const CHORD_INTERVALS = {
 // Open strings low to high: D, G, B, e.
 const STRING_OPEN_PC = [2, 7, 11, 4];
 const STRING_LABELS = ['D', 'G', 'B', 'e'];
+// Same four open strings, but as actual octave-aware MIDI notes (D3 G3 B3
+// E4) rather than bare pitch classes -- needed to turn a computed
+// fingering into real playable frequencies, not just note names.
+const STRING_OPEN_MIDI = [50, 55, 59, 64];
 
 function parseChordSymbol(sym) {
   if (!sym) return null;
@@ -108,6 +112,19 @@ function computeFingering(sym) {
   const result = best ? { frets: best.frets, root: rootPc, label: parsed.label } : null;
   fingeringCache.set(sym, result);
   return result;
+}
+
+// The actual playable pitches (Hz) for a chord's computed fret positions --
+// same voicing the diagram shows, turned into real frequencies instead of
+// just fret numbers, for anything that wants to *sound* the chord rather
+// than just draw it (the Metronome mode backing track).
+function chordFrequencies(sym) {
+  const fingering = computeFingering(sym);
+  if (!fingering) return null;
+  return fingering.frets.map((fret, i) => {
+    const midi = STRING_OPEN_MIDI[i] + fret;
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  });
 }
 
 function renderChordDiagram(container, sym) {

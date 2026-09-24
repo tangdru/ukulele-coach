@@ -6,6 +6,7 @@
 
   let currentSong = null;
   let metronome = null;
+  let backingTrack = null;
   let tuner = null;
   let rhythmCoach = null;
   let keyDetector = null;
@@ -198,11 +199,27 @@
       rhythmCoach.onHit = handleTimingHit;
       $('analyzeStats').classList.remove('hidden');
       analyzeActive = true;
+      // No backing track while Analyze Me is listening -- it's not
+      // needed (Analyze Me is the practice-with-feedback step, not the
+      // play-along step) and its own audio output could otherwise be
+      // picked back up by the mic as false strums.
+      metronome.onBeat = null;
     } else {
       ensureMetronome();
       if (rhythmCoach) rhythmCoach.stop();
       $('analyzeStats').classList.add('hidden');
       analyzeActive = false;
+      // Metronome mode: something to actually play over, not just a
+      // click -- softly strums whichever chord the clock is currently on,
+      // using the real computed baritone voicing (same math behind the
+      // fret diagrams), once per beat.
+      backingTrack = backingTrack || new BackingTrack(audioCtx);
+      metronome.onBeat = (beatIndex, time) => {
+        const lineIdx = lineIndexAt(time);
+        if (lineIdx < 0) return;
+        const sym = chordSymbolAt(lineIdx, beatIndexInLine(lineIdx, time));
+        if (sym) backingTrack.strum(sym, time);
+      };
     }
 
     const bpm = parseInt($('tempoInput').value, 10) || 90;
@@ -349,11 +366,36 @@
     currentChordEl = null;
   }
 
+  // Shared "where in the chart is the fixed clock at time T" math -- used
+  // by the visual playhead (highlightLoop) and the audio one (the backing
+  // track's per-beat chord lookup) alike, so what you see and what you
+  // hear can never disagree about which chord is current.
+  function lineIndexAt(time) {
+    let idx = -1;
+    for (let i = 0; i < lineStartTimes.length; i++) {
+      if (lineStartTimes[i] <= time) idx = i;
+      else break;
+    }
+    return idx;
+  }
+
+  function beatIndexInLine(lineIdx, time) {
+    const bpm = parseInt($('tempoInput').value, 10) || 90;
+    const secondsPerBeat = 60 / bpm;
+    return Math.floor((time - lineStartTimes[lineIdx]) / secondsPerBeat);
+  }
+
+  function chordSymbolAt(lineIdx, chordIdx) {
+    const line = flatLines[lineIdx];
+    const chordEls = line ? line.querySelectorAll('.chord-sym') : [];
+    if (!chordEls.length) return null;
+    return chordEls[Math.max(0, Math.min(chordIdx, chordEls.length - 1))].textContent;
+  }
+
   function highlightLoop() {
     if (!scrollActive) return;
     const now = audioCtx.currentTime;
-    let idx = activeLineIndex;
-    while (idx + 1 < lineStartTimes.length && lineStartTimes[idx + 1] <= now) idx++;
+    const idx = lineIndexAt(now);
     if (idx !== activeLineIndex) {
       if (activeLineIndex >= 0 && flatLines[activeLineIndex]) {
         flatLines[activeLineIndex].classList.remove('active-line');
@@ -371,12 +413,7 @@
     // Analyze Me's scoring already uses, so a chord that holds across
     // several beats just keeps the highlight rather than needing one
     // chord per beat.
-    if (idx >= 0) {
-      const bpm = parseInt($('tempoInput').value, 10) || 90;
-      const secondsPerBeat = 60 / bpm;
-      const beatsIntoLine = Math.floor((now - lineStartTimes[idx]) / secondsPerBeat);
-      setCurrentChord(idx, beatsIntoLine);
-    }
+    if (idx >= 0) setCurrentChord(idx, beatIndexInLine(idx, now));
     if (idx >= lineStartTimes.length - 1 && now > lineStartTimes[lineStartTimes.length - 1] + 2) {
       stopScroll();
       return;
