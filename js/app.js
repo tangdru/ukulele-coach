@@ -621,7 +621,7 @@
     const container = $('historyContent');
     const history = sessionHistorySnapshot();
     if (!history.length) {
-      container.innerHTML = '<p class="empty-hint">No Analyze Me sessions recorded yet — run Analyze Me, then Stop, to save your first grade.</p>';
+      container.innerHTML = '<p class="empty-hint">No Practice sessions recorded yet — run Practice, then Stop, to save your first grade.</p>';
       return;
     }
 

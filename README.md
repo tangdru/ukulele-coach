@@ -78,41 +78,46 @@ below are the explanations, kept in this README instead of on screen.
   chords — the defining 4th tone. This avoids the common mistake of reusing
   guitar chord shapes as-is, which can silently drop the root when it lived
   on the low E/A strings a baritone doesn't have.
-- **Three equal-weight play modes** (Play view, above the chart):
-  - **▶ Metronome** — a Web-Audio-scheduled metronome at the song's tempo,
-    auto-scrolling/highlighting the chart line by line on that fixed
-    clock, whether or not you're actually keeping up. Also highlights the
-    specific chord the clock says should be playing right now within that
-    line (holding on a chord across several beats until the next one is
-    due, rather than needing exactly one chord per beat), and softly
-    strums that chord's actual computed baritone voicing along with the
-    click — the same fingering math behind the chord diagrams, so it's a
-    real, correct-for-the-instrument backing to play over, not a generic
-    pad. There's no melody in a ChordPro chart (chords + lyrics only), so
-    this plays the harmony under the tune, not the tune itself — meant as
-    the listen-and-play-along first step before Analyze Me (practice with
-    feedback) and Follow Me (no net).
-  - **🎤 Follow Me** — listens through the mic (onset/strum detection) and
-    only advances to the next line once it's heard enough strums to match
-    that line's beat count, so the chart genuinely tracks your pace
-    instead of assuming you're locked to the tempo dial. Highlights the
-    chord your strums say you're currently on, advancing only in response
-    to real detected playing — it stays put through silence, never on a
-    clock of its own.
-  - **🎯 Analyze Me** — runs the metronome (needed as the timing reference)
-    *and* listens, scoring each strum against the nearest beat and
-    marking it directly on the chart: a colored left border on the line
-    that was playing (the worst rating heard on it, so a rough spot isn't
-    overwritten by a later clean hit) and a colored mark under the
-    specific chord that strum lines up with (matching strum order to
-    chord order within the line). A compact on-time% / avg-ms-off / strum
-    count row tracks the running session. Marks stay on the chart after
-    Stop so you can review the whole run; a fresh Analyze Me run or a new
-    song load clears them. Also highlights, same as Metronome mode, the
-    chord the fixed clock says you should be playing right now — so a
-    glance shows both *what to play next* and *how the last few chords
-    actually went*, at once.
-- **Practice history, graded** — every Analyze Me run you finish (Stop,
+- **Three equal-weight play modes, in a Learn → Practice → Perform
+  progression** (Play view, above the chart; the buttons are laid out left
+  to right in that order):
+  - **▶ Learn** (Metronome under the hood) — a Web-Audio-scheduled
+    metronome at the song's tempo, auto-scrolling/highlighting the chart
+    line by line on that fixed clock, whether or not you're actually
+    keeping up. Also highlights the specific chord the clock says should
+    be playing right now within that line (holding on a chord across
+    several beats until the next one is due, rather than needing exactly
+    one chord per beat), and softly strums that chord's actual computed
+    baritone voicing along with the click — the same fingering math
+    behind the chord diagrams, so it's a real, correct-for-the-instrument
+    backing to play over, not a generic pad. There's no melody in a
+    ChordPro chart (chords + lyrics only), so this plays the harmony
+    under the tune, not the tune itself — the listen-and-play-along first
+    step, before Practice (feedback) and Perform (no net).
+  - **🎯 Practice** (Analyze Me under the hood) — runs the metronome
+    (needed as the timing reference) *and* listens, scoring each strum
+    against the nearest beat and marking it directly on the chart: a
+    colored left border on the line that was playing (the worst rating
+    heard on it, so a rough spot isn't overwritten by a later clean hit)
+    and a colored mark under the specific chord that strum lines up with
+    (matching strum order to chord order within the line). A compact
+    on-time% / avg-ms-off / strum count row tracks the running session.
+    Marks stay on the chart after Stop so you can review the whole run; a
+    fresh Practice run or a new song load clears them. Also highlights,
+    same as Learn, the chord the fixed clock says you should be playing
+    right now — so a glance shows both *what to play next* and *how the
+    last few chords actually went*, at once.
+  - **🎤 Perform** (Follow Me under the hood) — listens through the mic
+    (onset/strum detection) and only advances to the next line once it's
+    heard enough strums to match that line's beat count, so the chart
+    genuinely tracks your pace instead of assuming you're locked to the
+    tempo dial. Highlights the chord your strums say you're currently on,
+    advancing only in response to real detected playing — it stays put
+    through silence, never on a clock of its own. Not fully unassisted
+    (it still turns the page for you, just without grading or a forced
+    tempo) — closer to "play it through at your own pace" than a true
+    no-help performance.
+- **Practice history, graded** — every Practice run you finish (Stop,
   switching modes, loading a new song, or letting it run to the end of the
   chart all count as "finishing") is graded A–F from its on-time
   percentage and saved to the **History** rail view — a static, read-only
@@ -130,9 +135,9 @@ below are the explanations, kept in this README instead of on screen.
   you. It scrolls both ways — vertically to keep the active line centered,
   and horizontally to keep the current playhead chord in view on a line
   too wide for the screen, rather than just centering the line and leaving
-  later chords on it off past the edge. Follow Me and Analyze Me don't
-  combine — Analyze Me needs the metronome's fixed clock to score against,
-  which is exactly what Follow Me deliberately doesn't run.
+  later chords on it off past the edge. Perform and Practice don't
+  combine — Practice needs the metronome's fixed clock to score against,
+  which is exactly what Perform deliberately doesn't run.
 - **Tuner** — continuous pitch detection (autocorrelation) with a note name,
   cents-off needle, and nearest-open-string hint (D3/G3/B3/E4). It picks up
   any clear pitch in range, not just a baritone uke specifically — a pitch
@@ -146,7 +151,7 @@ below are the explanations, kept in this README instead of on screen.
   icon in the top bar to listen for 6 seconds and estimate the key via a
   chroma histogram + Krumhansl-Schmuckler key-profile correlation.
 
-Follow Me's and Analyze Me's onset counting have the same practical
+Perform's and Practice's onset counting have the same practical
 limits: they're listening for a strum/pick attack loud and sharp enough
 to stand out from the recent average level, not specifically a baritone
 uke, so they can pick up other sharp sounds too, and a very soft or
