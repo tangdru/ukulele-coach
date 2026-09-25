@@ -61,6 +61,16 @@ below are the explanations, kept in this README instead of on screen.
   example chart, but an exotic real-world export could still convert
   imperfectly. Only the first song converts out of a multi-song playlist
   link.
+- **Zoom / fit to screen** — a small floating control in the corner of the
+  chart lets you shrink or enlarge the text (`−`/`+`), or tap the fit icon
+  to auto-shrink until the widest line on screen no longer needs
+  horizontal scrolling (clamped to a minimum readable size — it won't
+  shrink text into illegibility on a pathologically wide line, and stops
+  short of a perfect fit rather than doing that). Tapping fit again on a
+  chart that already fits snaps back to the default size instead of
+  zooming in further. Chords are positioned in the same unit (`ch`) the
+  font itself scales in, so they stay correctly aligned at any zoom level.
+  Resets to the default size whenever a new song loads.
 - **Baritone chord diagrams** — fingerings are *computed*, not hand-typed:
   each chord symbol is parsed into a root + interval set, and the app
   searches fret positions on the D/G/B/E strings for a valid voicing
@@ -222,8 +232,8 @@ library's database.
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
 `smoke_test_library.mjs`, `smoke_test_history.mjs`, `smoke_test_playhead.mjs`,
-`smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`, and `smoke_test_backing.mjs`
-are Playwright scripts (not part of the
+`smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`, `smoke_test_backing.mjs`,
+and `smoke_test_zoom.mjs` are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
@@ -263,7 +273,11 @@ an uploaded file, and a clean error for an unparseable link;
 can't literally be listened to) and asserts Metronome mode schedules real
 chord-tone notes -- not just the click -- once per beat, matching the
 actual voicing the chord diagrams would show, and that none of that
-plays during Analyze Me -- in this
+plays during Analyze Me; `smoke_test_zoom.mjs`
+checks that the zoom buttons actually resize the chart (chords included,
+without drifting out of alignment), that Fit to Screen eliminates
+horizontal overflow on a wide line without crossing the minimum-readable
+floor, and that zoom resets on a new song load -- in this
 project's own CI/sandbox, Supabase is unreachable, so the library/history
 tests specifically exercise the localStorage fallback path (`test_helpers.mjs`
 filters those expected network failures out of each test's error checks;
@@ -281,5 +295,6 @@ node smoke_test_playhead.mjs
 node smoke_test_hscroll.mjs
 node smoke_test_ireal.mjs
 node smoke_test_backing.mjs
+node smoke_test_zoom.mjs
 node smoke_test_import.mjs   # uses the committed sample_leadsheet.pdf/.docx fixtures
 ```

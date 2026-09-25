@@ -63,6 +63,12 @@
       <circle cx="12" cy="12" r="9" />
       <polyline points="12 7 12 12 16 14" />
     </symbol>
+    <symbol id="icon-fit" viewBox="0 0 24 24">
+      <path d="M4 9V4h5" />
+      <path d="M15 4h5v5" />
+      <path d="M20 15v5h-5" />
+      <path d="M9 20H4v-5" />
+    </symbol>
   </defs>
 </svg>
 
@@ -116,8 +122,15 @@
             <span class="legend-swatch rating-perfect"></span><span class="legend-swatch rating-good"></span><span class="legend-swatch rating-off"></span><span class="legend-swatch rating-miss"></span>
           </span>
         </div>
-        <div id="songView" class="song-view">
-          <p class="empty-hint">Tap <svg class="icon" aria-hidden="true"><use href="#icon-upload" /></svg> to load a song.</p>
+        <div class="song-view-wrap">
+          <div id="songView" class="song-view">
+            <p class="empty-hint">Tap <svg class="icon" aria-hidden="true"><use href="#icon-upload" /></svg> to load a song.</p>
+          </div>
+          <div id="chartZoom" class="chart-zoom">
+            <button id="zoomOutBtn" class="zoom-btn" type="button" title="Zoom out">&minus;</button>
+            <button id="fitScreenBtn" class="zoom-btn" type="button" title="Fit to screen"><svg class="icon" aria-hidden="true"><use href="#icon-fit" /></svg></button>
+            <button id="zoomInBtn" class="zoom-btn" type="button" title="Zoom in">+</button>
+          </div>
         </div>
       </section>
 

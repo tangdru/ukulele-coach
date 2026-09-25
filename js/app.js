@@ -95,6 +95,7 @@
     const song = parseChordPro(chordproText);
     currentSong = song;
     renderSong(song);
+    setChartScale(1); // each new chart starts at the default size, not a previous chart's fit-to-screen level
     $('songTitle').textContent = song.title || 'Untitled';
     $('songTitle').title = [song.title, song.artist].filter(Boolean).join(' — ');
     $('keyDisplay').textContent = song.key || '—';
@@ -157,6 +158,43 @@
       view.innerHTML = '<p class="empty-hint">This song has no lines to show.</p>';
     }
   }
+
+  // ---------- Chart zoom / fit-to-screen ----------
+  // #songView's font-size is otherwise unset (inherits the page default),
+  // and every chord's position is in `ch` units relative to that same
+  // font-size (see span.style.left above) -- so scaling this one property
+  // scales the whole chart uniformly, chords included, without needing to
+  // touch anything else.
+
+  let chartScale = 1;
+  const CHART_MIN_SCALE = 0.4;
+  const CHART_MAX_SCALE = 2.5;
+
+  function setChartScale(scale) {
+    chartScale = Math.max(CHART_MIN_SCALE, Math.min(CHART_MAX_SCALE, scale));
+    $('songView').style.fontSize = chartScale + 'rem';
+  }
+
+  $('zoomInBtn').addEventListener('click', () => setChartScale(chartScale * 1.15));
+  $('zoomOutBtn').addEventListener('click', () => setChartScale(chartScale / 1.15));
+
+  $('fitScreenBtn').addEventListener('click', () => {
+    if (!flatLines.length) return;
+    const view = $('songView');
+    if (view.scrollWidth <= view.clientWidth) {
+      setChartScale(1); // already fits -- snap back to the default size rather than zooming in further
+      return;
+    }
+    // scrollWidth/clientWidth are measured at the *current* scale, so this
+    // ratio is the correction needed regardless of what that scale already
+    // was -- but #songView's fixed-pixel padding/border don't shrink along
+    // with the font, so content width isn't quite perfectly linear in
+    // font-size and one application under-corrects slightly. Re-measuring
+    // and re-applying a few times converges on a tight fit either way.
+    for (let i = 0; i < 4 && view.scrollWidth > view.clientWidth; i++) {
+      setChartScale(chartScale * (view.clientWidth / view.scrollWidth) * 0.98);
+    }
+  });
 
   function showChordDiagram(sym) {
     const modal = $('chordModal');
