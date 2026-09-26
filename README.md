@@ -1,4 +1,4 @@
-# Baritone Uke Coach
+# Sheets-it
 
 A browser-based practice companion for baritone ukulele (tuned D G B E, the
 same as a guitar's top 4 strings). No build step, no framework, no account —

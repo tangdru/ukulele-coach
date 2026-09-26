@@ -1,4 +1,4 @@
-// Supabase connection settings for Baritone Uke Coach.
+// Supabase connection settings for Sheets-it.
 //
 // Setup:
 //   1. Create a free project at https://supabase.com
