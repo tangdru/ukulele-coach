@@ -517,15 +517,69 @@ button {
 }
 .history-content h3:first-child { margin-top: 0; }
 
-.history-problems {
+.history-progress {
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   padding: 10px 14px;
 }
-.history-problems ol { margin: 0; padding-left: 20px; }
-.history-problems li { margin-bottom: 4px; }
-.problem-count { color: var(--text-dim); font-size: 0.75rem; margin-left: 4px; }
+
+/* Trend: on-time% per recent Practice session, oldest to newest, colored
+   like the grade badges so a glance at the shape+color says "getting
+   better" without reading numbers. */
+.trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+  margin-top: 6px;
+}
+.trend-bar {
+  flex: 1 1 0;
+  min-width: 4px;
+  max-width: 18px;
+  border-radius: 2px 2px 0 0;
+  background: var(--text-dim);
+}
+.trend-bar.grade-a { background: var(--accent-strong); }
+.trend-bar.grade-b { background: var(--accent); }
+.trend-bar.grade-c,
+.trend-bar.grade-d { background: var(--warn); }
+.trend-bar.grade-f { background: var(--bad); }
+
+/* Heatmap: one cell per chart line, in chart order, so trouble spots read
+   as "where on the page" rather than a disconnected ranked list. Lives
+   here in History (keyed to session data) rather than as an overlay on
+   the Play chart itself. */
+.heatmap-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 10px;
+}
+.heat-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--panel-border);
+}
+.heat-cell.heat-unpracticed { background: var(--panel-border); }
+.heat-cell.heat-clean { background: var(--accent-strong); }
+.heat-cell.heat-low { background: var(--accent); }
+.heat-cell.heat-mid { background: var(--warn); }
+.heat-cell.heat-high { background: var(--bad); }
+
+.heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
+.heatmap-legend .heat-cell { width: 10px; height: 10px; margin-left: 8px; }
+.heatmap-legend .heat-cell:first-child { margin-left: 0; }
 
 .history-sessions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .history-session {

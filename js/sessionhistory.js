@@ -127,26 +127,37 @@ function saveSessionToHistory(record) {
   }
 }
 
-// Aggregates per-line trouble across every saved session for a song, so
-// "which part of the sheet music" answers across practice history, not
-// just the most recent run. Only "off"/"miss" ratings count as a problem;
-// ranked by how many sessions flagged it, ties broken by total severity.
-function problemLinesForSong(title, topN = 5) {
+// The most recent `limit` Practice sessions for a song, oldest first, for
+// plotting a "getting better over time" trend -- storage order is
+// newest-first, so this both filters and reverses.
+function trendForSong(title, limit = 10) {
+  return sessionHistorySnapshot()
+    .filter((s) => s.songTitle === title)
+    .slice(0, limit)
+    .reverse();
+}
+
+// Aggregates per-line trouble across every saved session for a song,
+// indexed to match the currently loaded chart's line positions -- lets
+// History render a heatmap strip that lines up with the sheet itself,
+// rather than a ranked list disconnected from where the lines actually
+// are. Only lines that were actually rated at least once (i.e. Analyze Me
+// reached them) count as "seen"; a never-seen line is a gap in practice
+// coverage, not a clean line.
+function lineHeatForSong(title, lineCount) {
   const RANK = { perfect: 0, good: 1, off: 2, miss: 3 };
-  const byLine = new Map(); // line text -> { text, sessionsFlagged, weight }
+  const heat = Array.from({ length: lineCount }, () => ({ timesSeen: 0, timesProblem: 0 }));
 
   sessionHistorySnapshot()
     .filter((s) => s.songTitle === title)
     .forEach((s) => {
       (s.lines || []).forEach((l) => {
-        if ((RANK[l.rating] || 0) < 2) return;
-        const key = l.text || `line ${l.index}`;
-        const entry = byLine.get(key) || { text: l.text, sessionsFlagged: 0, weight: 0 };
-        entry.sessionsFlagged += 1;
-        entry.weight += RANK[l.rating];
-        byLine.set(key, entry);
+        if (l.index < 0 || l.index >= lineCount) return;
+        const cell = heat[l.index];
+        cell.timesSeen += 1;
+        if ((RANK[l.rating] || 0) >= 2) cell.timesProblem += 1;
       });
     });
 
-  return [...byLine.values()].sort((a, b) => b.sessionsFlagged - a.sessionsFlagged || b.weight - a.weight).slice(0, topN);
+  return heat.map((c) => ({ ...c, ratio: c.timesSeen ? c.timesProblem / c.timesSeen : 0 }));
 }

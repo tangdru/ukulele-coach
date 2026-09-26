@@ -725,6 +725,59 @@
     return div.innerHTML;
   }
 
+  // Bucket a line's problem ratio into a heat level. A line never rated by
+  // Analyze Me is "unpracticed" rather than "clean" -- there's no evidence
+  // either way, so it shouldn't read as a good sign.
+  function heatBucket(cell) {
+    if (!cell.timesSeen) return 'unpracticed';
+    if (cell.ratio === 0) return 'clean';
+    if (cell.ratio < 0.34) return 'low';
+    if (cell.ratio < 0.67) return 'mid';
+    return 'high';
+  }
+
+  // Trend sparkline (on-time% per recent session) plus a per-line trouble
+  // heatmap, both scoped to one song and placed together in History --
+  // the heatmap deliberately lives here, keyed to session data, rather
+  // than as a persistent overlay on the Play chart.
+  function renderSongProgress(title) {
+    const trend = trendForSong(title, 10);
+    const bars = trend
+      .map((s) => {
+        const pct = Math.max(0, Math.min(100, Math.round(s.onTimePct || 0)));
+        const date = new Date(s.createdAt);
+        const dateStr = isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+        const gradeClass = escapeHtml((s.grade || '—').toLowerCase());
+        return `<div class="trend-bar grade-${gradeClass}" style="height:${Math.max(pct, 4)}%" title="${escapeHtml(dateStr)}: ${pct}% on-time (${escapeHtml(s.grade || '—')})"></div>`;
+      })
+      .join('');
+
+    const heat = lineHeatForSong(title, flatLines.length);
+    const cells = heat
+      .map((cell, i) => {
+        const bucket = heatBucket(cell);
+        const label =
+          bucket === 'unpracticed'
+            ? `Line ${i + 1}: not yet practiced`
+            : `Line ${i + 1}: rough in ${cell.timesProblem}/${cell.timesSeen} session${cell.timesSeen === 1 ? '' : 's'}`;
+        return `<span class="heat-cell heat-${bucket}" title="${escapeHtml(label)}"></span>`;
+      })
+      .join('');
+
+    return `<div class="history-progress">
+      <h3>Progress on &ldquo;${escapeHtml(title)}&rdquo;</h3>
+      <div class="trend-chart">${bars}</div>
+      ${heat.length ? `<div class="heatmap-strip">${cells}</div>` : ''}
+      <div class="heatmap-legend">
+        <span class="heat-cell heat-clean"></span> clean
+        <span class="heat-cell heat-low"></span> low
+        <span class="heat-cell heat-mid"></span> medium
+        <span class="heat-cell heat-high"></span> high
+        <span class="heat-cell heat-unpracticed"></span> unpracticed
+      </div>
+    </div>`;
+  }
+
   function renderHistoryView() {
     const container = $('historyContent');
     const history = sessionHistorySnapshot();
@@ -736,17 +789,9 @@
     let html = '';
 
     if (currentSong && currentSong.title) {
-      const problems = problemLinesForSong(currentSong.title, 5);
-      if (problems.length) {
-        html += `<div class="history-problems">
-          <h3>Trouble spots in &ldquo;${escapeHtml(currentSong.title)}&rdquo;</h3>
-          <ol>${problems
-            .map(
-              (p) =>
-                `<li>${escapeHtml(p.text || '(blank line)')} <span class="problem-count">flagged in ${p.sessionsFlagged} session${p.sessionsFlagged === 1 ? '' : 's'}</span></li>`
-            )
-            .join('')}</ol>
-        </div>`;
+      const hasSongSessions = history.some((s) => s.songTitle === currentSong.title);
+      if (hasSongSessions) {
+        html += renderSongProgress(currentSong.title);
       }
     }
 
