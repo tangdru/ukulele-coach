@@ -21,6 +21,14 @@
   let scrollStartTime = 0;
   let activeLineIndex = -1;
 
+  // Loop a section: repeat lines [loopStart, loopEnd] instead of playing
+  // the whole song once -- the classic "isolate the rough spot and drill
+  // it" practice technique. -1 means no loop set (play the whole chart).
+  let loopStart = -1;
+  let loopEnd = -1;
+  let loopPicking = false;
+  let loopPickFirst = null;
+
   const RATING_RANK = { perfect: 0, good: 1, off: 2, miss: 3 };
   let lineOnsetCounts = []; // per-line: how many timing hits landed on it, so
   // each new one maps to the next chord in that line
@@ -91,6 +99,7 @@
     // song's flatLines/ratings still in place to do that.
     stopScroll();
     stopFollow();
+    clearLoop(); // line indices are song-specific, a leftover loop range wouldn't mean anything on a new chart
 
     const song = parseChordPro(chordproText);
     currentSong = song;
@@ -124,9 +133,14 @@
         view.appendChild(header);
       }
       section.lines.forEach((line) => {
+        // Captured per-iteration: `idx` itself is one shared, mutating
+        // variable across the whole render, so a closure over it directly
+        // would see only its final value (one past the last line) once
+        // rendering finishes and the user actually clicks something.
+        const lineIdx = idx;
         const lineEl = document.createElement('div');
         lineEl.className = 'song-line';
-        lineEl.dataset.index = String(idx);
+        lineEl.dataset.index = String(lineIdx);
 
         const chordRow = document.createElement('div');
         chordRow.className = 'chord-row';
@@ -146,7 +160,10 @@
 
         lineEl.appendChild(chordRow);
         lineEl.appendChild(lyricRow);
-        lineEl.addEventListener('click', () => jumpToLine(idx));
+        lineEl.addEventListener('click', () => {
+          if (loopPicking) handleLoopPick(lineIdx);
+          else jumpToLine(lineIdx);
+        });
         view.appendChild(lineEl);
 
         flatLines.push(lineEl);
@@ -269,7 +286,9 @@
       rhythmStatsLoop();
     }
 
-    scrollStartTime = audioCtx.currentTime + 0.1;
+    // With a loop range set, start there instead of at the top of the chart.
+    const startIdx = loopStart >= 0 ? loopStart : 0;
+    scrollStartTime = audioCtx.currentTime + 0.1 - startIdx * secondsPerLine;
     lineStartTimes = flatLines.map((_, i) => scrollStartTime + i * secondsPerLine);
     activeLineIndex = -1;
     scrollActive = true;
@@ -432,7 +451,25 @@
 
   function highlightLoop() {
     if (!scrollActive) return;
-    const now = audioCtx.currentTime;
+    let now = audioCtx.currentTime;
+    // Looping a section: once playback runs past the end of the loop
+    // range, re-anchor the schedule back to loopStart -- same "shift
+    // scrollStartTime so this index lands at now" trick jumpToLine()
+    // already uses, so the metronome/backing track/scoring all just keep
+    // running through the seam rather than needing a restart. Checked by
+    // *time*, not by idx exceeding loopEnd -- if loopEnd is the chart's
+    // very last line, idx can never go past it (lineStartTimes has no
+    // further entries to return), so it would otherwise just sit there
+    // instead of wrapping.
+    if (loopStart >= 0) {
+      const bpm = parseInt($('tempoInput').value, 10) || 90;
+      const secondsPerLine = (beatsPerLine() * 60) / bpm;
+      if (now >= lineStartTimes[loopEnd] + secondsPerLine) {
+        scrollStartTime = now - loopStart * secondsPerLine;
+        lineStartTimes = flatLines.map((_, i) => scrollStartTime + i * secondsPerLine);
+        now = audioCtx.currentTime;
+      }
+    }
     const idx = lineIndexAt(now);
     if (idx !== activeLineIndex) {
       if (activeLineIndex >= 0 && flatLines[activeLineIndex]) {
@@ -452,7 +489,7 @@
     // several beats just keeps the highlight rather than needing one
     // chord per beat.
     if (idx >= 0) setCurrentChord(idx, beatIndexInLine(idx, now));
-    if (idx >= lineStartTimes.length - 1 && now > lineStartTimes[lineStartTimes.length - 1] + 2) {
+    if (loopStart < 0 && idx >= lineStartTimes.length - 1 && now > lineStartTimes[lineStartTimes.length - 1] + 2) {
       stopScroll();
       return;
     }
@@ -522,11 +559,13 @@
     };
     followScroll.onAdvance = advanceFollowLine;
 
+    // With a loop range set, start there instead of at the top of the chart.
+    const startIdx = loopStart >= 0 ? loopStart : 0;
     flatLines.forEach((el) => el.classList.remove('active-line'));
-    activeLineIndex = 0;
-    if (flatLines[0]) flatLines[0].classList.add('active-line');
+    activeLineIndex = startIdx;
+    if (flatLines[startIdx]) flatLines[startIdx].classList.add('active-line');
     updateFollowStatus(0, beatsPerLine());
-    setCurrentChord(0, 0);
+    setCurrentChord(startIdx, 0);
 
     followScroll.start();
     followActive = true;
@@ -534,7 +573,8 @@
   }
 
   function advanceFollowLine() {
-    const nextIdx = activeLineIndex + 1;
+    let nextIdx = activeLineIndex + 1;
+    if (loopStart >= 0 && nextIdx > loopEnd) nextIdx = loopStart;
     if (nextIdx >= flatLines.length) {
       stopFollow();
       return;
@@ -568,6 +608,74 @@
   $('stopBtn').addEventListener('click', () => {
     stopScroll();
     stopFollow();
+  });
+
+  // ---------- Loop a section ----------
+
+  function updateLoopRangeHighlight() {
+    flatLines.forEach((el, i) => {
+      el.classList.toggle('loop-range', loopStart >= 0 && i >= loopStart && i <= loopEnd);
+    });
+  }
+
+  function updateLoopButtonLabel() {
+    $('loopBtn').classList.toggle('active', loopPicking || loopStart >= 0);
+    if (loopPicking) {
+      $('loopBtnLabel').textContent = loopPickFirst === null ? 'Pick 1st…' : 'Pick 2nd…';
+      $('loopStatus').classList.remove('hidden');
+      $('loopStatusText').textContent =
+        loopPickFirst === null
+          ? 'Tap a line to start the loop…'
+          : 'Tap the last line to loop (or the same line again for just one line)…';
+      return;
+    }
+    if (loopStart >= 0) {
+      const count = loopEnd - loopStart + 1;
+      $('loopBtnLabel').textContent = `Loop: ${count} line${count === 1 ? '' : 's'}`;
+      $('loopStatus').classList.add('hidden');
+      return;
+    }
+    $('loopBtnLabel').textContent = 'Loop';
+    $('loopStatus').classList.add('hidden');
+  }
+
+  function handleLoopPick(idx) {
+    if (loopPickFirst === null) {
+      loopPickFirst = idx;
+      if (flatLines[idx]) flatLines[idx].classList.add('loop-picking');
+      updateLoopButtonLabel();
+      return;
+    }
+    if (flatLines[loopPickFirst]) flatLines[loopPickFirst].classList.remove('loop-picking');
+    loopStart = Math.min(loopPickFirst, idx);
+    loopEnd = Math.max(loopPickFirst, idx);
+    loopPicking = false;
+    loopPickFirst = null;
+    updateLoopRangeHighlight();
+    updateLoopButtonLabel();
+  }
+
+  function clearLoop() {
+    if (loopPickFirst !== null && flatLines[loopPickFirst]) {
+      flatLines[loopPickFirst].classList.remove('loop-picking');
+    }
+    loopStart = -1;
+    loopEnd = -1;
+    loopPicking = false;
+    loopPickFirst = null;
+    updateLoopRangeHighlight();
+    updateLoopButtonLabel();
+  }
+
+  $('loopBtn').addEventListener('click', () => {
+    if (loopStart >= 0 || loopPicking) {
+      clearLoop();
+      return;
+    }
+    if (!flatLines.length) return;
+    loopPicking = true;
+    loopPickFirst = null;
+    updateLoopButtonLabel();
   });
 
   // ---------- Tap tempo ----------

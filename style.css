@@ -267,6 +267,12 @@ button {
 .song-line:hover { background: rgba(255,255,255,0.03); }
 .song-line.active-line { background: rgba(127, 216, 190, 0.12); }
 
+/* Loop: the range currently set to repeat (a dashed accent edge so it
+   reads as "bounds", distinct from active-line's solid fill), and the one
+   line already tapped while picking the range's second end. */
+.song-line.loop-range { border-left-color: var(--accent); }
+.song-line.loop-picking { border-left-color: var(--warn); border-left-style: dashed; }
+
 /* Timing marks from "Analyze Me": the worst rating heard while this
    line was active, so a problem spot stays visible after playing past it. */
 .song-line.rated-perfect { border-left-color: var(--accent-strong); }

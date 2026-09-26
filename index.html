@@ -69,6 +69,12 @@
       <path d="M20 15v5h-5" />
       <path d="M9 20H4v-5" />
     </symbol>
+    <symbol id="icon-loop" viewBox="0 0 24 24">
+      <path d="M17 2 21 6 17 10" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="M7 22 3 18 7 14" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </symbol>
   </defs>
 </svg>
 
@@ -108,11 +114,13 @@
           <button id="modeAnalyzeBtn" class="mode-btn" type="button" title="Analyze Me: practice with timing feedback"><svg class="icon" aria-hidden="true"><use href="#icon-target" /></svg> Practice</button>
           <button id="modeFollowBtn" class="mode-btn" type="button" title="Follow Me: play at your own pace"><svg class="icon" aria-hidden="true"><use href="#icon-mic" /></svg> Perform</button>
           <button id="stopBtn" class="mode-btn stop-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-stop" /></svg> Stop</button>
+          <button id="loopBtn" class="mode-btn loop-toggle-btn" type="button" title="Loop a section: tap, then tap two lines on the chart to pick the range"><svg class="icon" aria-hidden="true"><use href="#icon-loop" /></svg> <span id="loopBtnLabel">Loop</span></button>
           <label class="scroll-toggle">
             <input type="checkbox" id="autoScrollToggle" checked />
             Auto-scroll
           </label>
         </div>
+        <p id="loopStatus" class="status-line hidden"><svg class="icon" aria-hidden="true"><use href="#icon-loop" /></svg> <span id="loopStatusText"></span></p>
         <p id="followStatus" class="status-line hidden"><svg class="icon" aria-hidden="true"><use href="#icon-headphones" /></svg> <span id="followStatusText"></span></p>
         <div id="analyzeStats" class="status-line rhythm-stats hidden">
           <span class="stat"><span id="statOnTime" class="stat-value">&mdash;</span><span class="stat-label">on-time</span></span>
