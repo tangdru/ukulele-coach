@@ -12,24 +12,9 @@
 // most-open voicing. This is correct by construction rather than by
 // transcription.
 
-const ROOT_PC = {
-  C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5,
-  'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
-};
-
-const CHORD_INTERVALS = {
-  major: [0, 4, 7],
-  minor: [0, 3, 7],
-  '7': [0, 4, 7, 10],
-  maj7: [0, 4, 7, 11],
-  m7: [0, 3, 7, 10],
-  dim: [0, 3, 6],
-  aug: [0, 4, 8],
-  sus2: [0, 2, 7],
-  sus4: [0, 5, 7],
-  '6': [0, 4, 7, 9],
-  m6: [0, 3, 7, 9],
-};
+// ROOT_PC, CHORD_INTERVALS and parseChordSymbol now live in
+// chord-theory.js (loaded before this file), shared with the piano and
+// saxophone chord modules.
 
 // Open strings low to high: D, G, B, e.
 const STRING_OPEN_PC = [2, 7, 11, 4];
@@ -38,32 +23,6 @@ const STRING_LABELS = ['D', 'G', 'B', 'e'];
 // E4) rather than bare pitch classes -- needed to turn a computed
 // fingering into real playable frequencies, not just note names.
 const STRING_OPEN_MIDI = [50, 55, 59, 64];
-
-function parseChordSymbol(sym) {
-  if (!sym) return null;
-  const cleaned = sym.replace(/\(.*?\)/g, '').split('/')[0].trim();
-  const m = cleaned.match(/^([A-Ga-g])([#b]?)(.*)$/);
-  if (!m) return null;
-  const rootKey = m[1].toUpperCase() + m[2];
-  const rootPc = ROOT_PC[rootKey];
-  if (rootPc === undefined) return null;
-
-  const rest = m[3].toLowerCase();
-  let quality = 'major';
-  if (/^(maj7|maj9|Δ)/.test(rest)) quality = 'maj7';
-  else if (/^maj/.test(rest)) quality = 'major';
-  else if (/^(dim|°)/.test(rest)) quality = 'dim';
-  else if (/^(aug|\+)/.test(rest)) quality = 'aug';
-  else if (/^sus4/.test(rest)) quality = 'sus4';
-  else if (/^sus2/.test(rest)) quality = 'sus2';
-  else if (/^(m6|min6)/.test(rest)) quality = 'm6';
-  else if (/^(m7|min7|m9|min9)/.test(rest)) quality = 'm7';
-  else if (/^(m|min)(?!aj)/.test(rest)) quality = 'minor';
-  else if (/^(7|9|11|13)/.test(rest)) quality = '7';
-  else if (/^6/.test(rest)) quality = '6';
-
-  return { rootPc, quality, label: cleaned };
-}
 
 const fingeringCache = new Map();
 
@@ -118,7 +77,7 @@ function computeFingering(sym) {
 // same voicing the diagram shows, turned into real frequencies instead of
 // just fret numbers, for anything that wants to *sound* the chord rather
 // than just draw it (the Metronome mode backing track).
-function chordFrequencies(sym) {
+function ukuleleChordFrequencies(sym) {
   const fingering = computeFingering(sym);
   if (!fingering) return null;
   return fingering.frets.map((fret, i) => {
@@ -127,7 +86,7 @@ function chordFrequencies(sym) {
   });
 }
 
-function renderChordDiagram(container, sym) {
+function renderUkuleleChordDiagram(container, sym) {
   const fingering = computeFingering(sym);
   container.innerHTML = '';
   const title = document.createElement('div');
@@ -226,3 +185,11 @@ function renderChordDiagram(container, sym) {
 
   container.appendChild(svg);
 }
+
+// Namespaced so the instrument selector (js/instruments.js) can pick this
+// module's chord rendering/sound out by instrument id, without its
+// function names colliding with the piano/saxophone chord modules'.
+window.ChordsUkulele = {
+  renderChordDiagram: renderUkuleleChordDiagram,
+  chordFrequencies: ukuleleChordFrequencies,
+};

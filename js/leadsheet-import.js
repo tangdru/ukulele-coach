@@ -15,7 +15,7 @@
 const BARLINE_TOKENS = new Set(['|', '||', ':|', '|:', ':||', '||:', '%', '/']);
 const NO_CHORD_TOKENS = new Set(['n.c.', 'nc', 'tacet']);
 
-// parseChordSymbol (chords-baritone.js) is deliberately lenient -- it's
+// parseChordSymbol (chord-theory.js) is deliberately lenient -- it's
 // meant to fingerprint a symbol that's *already known* to be a chord (one
 // written inside [brackets] in a ChordPro file). It'll happily parse
 // "Amazing" as "Am" (root A, and "azing" satisfies its minor-quality

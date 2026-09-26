@@ -216,9 +216,16 @@
   function showChordDiagram(sym) {
     const modal = $('chordModal');
     const content = $('chordModalContent');
-    renderChordDiagram(content, sym);
+    currentInstrument().renderChordDiagram(content, sym);
     modal.classList.remove('hidden');
   }
+
+  // ---------- Instrument selector ----------
+
+  $('instrumentSelect').value = currentInstrumentId;
+  $('instrumentSelect').addEventListener('change', (e) => {
+    setCurrentInstrument(e.target.value);
+  });
 
   $('chordModal').addEventListener('click', (e) => {
     if (e.target.id === 'chordModal' || e.target.classList.contains('chord-modal-backdrop')) {

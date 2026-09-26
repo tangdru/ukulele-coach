@@ -104,6 +104,11 @@
       <input id="tempoInput" class="tempo-chip" type="number" min="30" max="240" value="90" title="Tempo (BPM)" />
       <button id="tapTempoBtn" class="icon-btn" type="button" title="Tap tempo"><svg class="icon" aria-hidden="true"><use href="#icon-pulse" /></svg></button>
       <span id="timeSigDisplay" class="meta-chip" title="Time signature">4/4</span>
+      <select id="instrumentSelect" class="instrument-select" title="Instrument">
+        <option value="ukulele">Ukulele</option>
+        <option value="piano">Piano</option>
+        <option value="saxophone">Saxophone</option>
+      </select>
     </header>
 
     <main class="main-view">
@@ -204,7 +209,11 @@
 <script src="vendor/mammoth.browser.min.js"></script>
 <script src="js/pitch.js"></script>
 <script src="js/chordpro.js"></script>
+<script src="js/chord-theory.js"></script>
 <script src="js/chords-baritone.js"></script>
+<script src="js/chords-piano.js"></script>
+<script src="js/chords-saxophone.js"></script>
+<script src="js/instruments.js"></script>
 <script src="js/songs.js"></script>
 <script src="js/songlibrary.js"></script>
 <script src="js/sessionhistory.js"></script>

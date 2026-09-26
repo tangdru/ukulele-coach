@@ -1,10 +1,11 @@
 // Soft chord-tone backing for Metronome mode: strums the actual computed
-// baritone voicing for whichever chord is active, once per beat -- the
-// same fingering math that draws the chord diagrams, so what you hear is
-// what the instrument would really sound like, not a generic pad. There's
-// no melody in a ChordPro chart (chords + lyrics only), so this can't play
-// "the tune" -- it plays the harmony underneath it, soft enough to sit
-// under a click and under your own playing rather than lead either.
+// voicing for whichever instrument is selected and chord is active, once
+// per beat -- the same theory that draws the chord diagrams, so what you
+// hear matches what's shown (and for saxophone, just the root -- the one
+// note a monophonic instrument could actually hold against the harmony).
+// There's no melody in a ChordPro chart (chords + lyrics only), so this
+// can't play "the tune" -- it plays the harmony underneath it, soft enough
+// to sit under a click and under your own playing rather than lead either.
 
 class BackingTrack {
   constructor(audioCtx) {
@@ -18,7 +19,7 @@ class BackingTrack {
   // short pluck envelope, with a slight low-to-high stagger so it reads as
   // one soft strum rather than four notes landing at once.
   strum(sym, time) {
-    const freqs = chordFrequencies(sym);
+    const freqs = currentInstrument().chordFrequencies(sym);
     if (!freqs) return;
     freqs.forEach((freq, i) => {
       const startAt = time + i * 0.012;

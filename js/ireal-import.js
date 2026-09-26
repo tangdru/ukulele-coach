@@ -36,7 +36,7 @@ const IREAL_REPEAT_BAR_TOKENS = ['XyQKcl', 'Kcl', 'XyQ', 'x'];
 
 // Translates one *known* iReal quality suffix (matched whole, from the
 // list below -- never a partial/ambiguous scan) into a suffix
-// chords-baritone.js's lenient parseChordSymbol() already recognizes. Only
+// chord-theory.js's lenient parseChordSymbol() already recognizes. Only
 // the prefix needs to classify correctly -- trailing alterations (b9, #11,
 // ...) ride along in the displayed text even though the fingering solver
 // ignores them, same simplification that parser already makes for e.g.

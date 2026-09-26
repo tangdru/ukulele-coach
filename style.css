@@ -117,6 +117,15 @@ button {
 }
 .icon-btn:hover { color: var(--accent); }
 .key-progress { font-size: 0.7rem; }
+.instrument-select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+}
 .tempo-chip {
   width: 52px;
   background: var(--bg);
@@ -354,6 +363,32 @@ button {
 .chord-diagram-string-label { font-size: 8px; fill: var(--text-dim); text-anchor: middle; }
 .chord-diagram-fret-label { font-size: 8px; fill: var(--text-dim); }
 .chord-diagram-unknown { color: var(--text-dim); font-size: 0.85rem; max-width: 160px; }
+
+/* Piano chord diagram: one octave, chord tones lit up in place. */
+.piano-key { stroke: var(--panel-border); stroke-width: 1; }
+.piano-key-white { fill: var(--panel); }
+.piano-key-black { fill: var(--text); }
+.piano-key-active { fill: var(--accent); }
+.piano-key-root { fill: var(--accent-strong); }
+
+/* Saxophone chord "diagram": a monophonic instrument can't voice a full
+   chord, so this lists each tone as a written note (transposed for the
+   player's horn) instead of drawing fingering keys. */
+.sax-diagram-subtitle { color: var(--text-dim); font-size: 0.72rem; margin-bottom: 8px; }
+.sax-chord-tones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+.sax-chord-tone {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+}
+.sax-chord-tone-root { border-left-color: var(--accent-strong); }
+.sax-chord-tone-written { font-weight: 700; font-size: 1rem; min-width: 24px; }
+.sax-chord-tone-role { color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.sax-chord-tone-sounds { color: var(--text-dim); font-size: 0.72rem; margin-left: auto; }
 
 /* Tuner view */
 .tuner-display { text-align: center; padding: 20px 0; }

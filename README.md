@@ -1,8 +1,9 @@
 # Sheets-it
 
-A browser-based practice companion for baritone ukulele (tuned D G B E, the
-same as a guitar's top 4 strings). No build step, no framework, no account —
-open `index.html` (served, not `file://`, so the microphone works) and go.
+A browser-based practice companion for chord charts, playable on ukulele,
+piano, or saxophone (pick one from the top bar). No build step, no
+framework, no account — open `index.html` (served, not `file://`, so the
+microphone works) and go.
 
 **Live:** `https://tangdru.github.io/ukulele-coach/`
 
@@ -71,13 +72,32 @@ below are the explanations, kept in this README instead of on screen.
   zooming in further. Chords are positioned in the same unit (`ch`) the
   font itself scales in, so they stay correctly aligned at any zoom level.
   Resets to the default size whenever a new song loads.
-- **Baritone chord diagrams** — fingerings are *computed*, not hand-typed:
-  each chord symbol is parsed into a root + interval set, and the app
-  searches fret positions on the D/G/B/E strings for a valid voicing
-  containing the chord's root, third (or sus tone), and — for 7th/6th
-  chords — the defining 4th tone. This avoids the common mistake of reusing
-  guitar chord shapes as-is, which can silently drop the root when it lived
-  on the low E/A strings a baritone doesn't have.
+- **Instrument selector (top bar)** — Ukulele, Piano, or Saxophone. Every
+  chord symbol is parsed once into a root + interval set
+  (`js/chord-theory.js`), shared by all three instrument modules, so
+  switching instruments never changes what a chord *means* — only how it's
+  shown and how the Learn-mode backing track sounds it:
+  - **Ukulele** — fingerings are *computed*, not hand-typed: the app
+    searches fret positions on the baritone's D/G/B/E strings for a valid
+    voicing containing the chord's root, third (or sus tone), and — for
+    7th/6th chords — the defining 4th tone. This avoids the common mistake
+    of reusing guitar chord shapes as-is, which can silently drop the root
+    when it lived on the low E/A strings a baritone doesn't have.
+  - **Piano** — every chord tone lit up on a one-octave keyboard diagram,
+    root marked distinctly. No fingering search needed — piano keys are
+    already laid out by pitch, unlike a fretboard.
+  - **Saxophone** — a saxophone can only play one note at a time, so
+    instead of a diagram it lists the chord's notes to read or improvise
+    from, transposed to alto (Eb) written pitch (e.g. concert C is shown
+    as the alto's written A) alongside each note's role (root/3rd/5th/…).
+    There's deliberately no fingering-key diagram here yet — encoding a
+    saxophone's actual key combinations wrong would teach bad technique,
+    and that data wasn't something this could verify from this
+    environment; it can be added later against a confirmed chart.
+
+  The choice persists (`localStorage`) and also changes what Learn mode's
+  backing track plays: ukulele's/piano's full voicing, or just the root
+  for saxophone (the one note it could actually hold against the harmony).
 - **Three equal-weight play modes, in a Learn → Practice → Perform
   progression** (Play view, above the chart; the buttons are laid out left
   to right in that order):
@@ -88,9 +108,10 @@ below are the explanations, kept in this README instead of on screen.
     be playing right now within that line (holding on a chord across
     several beats until the next one is due, rather than needing exactly
     one chord per beat), and softly strums that chord's actual computed
-    baritone voicing along with the click — the same fingering math
-    behind the chord diagrams, so it's a real, correct-for-the-instrument
-    backing to play over, not a generic pad. There's no melody in a
+    voicing for the currently selected instrument along with the click —
+    the same theory behind the chord diagrams, so it's a real,
+    correct-for-the-instrument backing to play over, not a generic pad.
+    There's no melody in a
     ChordPro chart (chords + lyrics only), so this plays the harmony
     under the tune, not the tune itself — the listen-and-play-along first
     step, before Practice (feedback) and Perform (no net).
@@ -238,7 +259,8 @@ library's database.
 `smoke_test_tuner.mjs`, `smoke_test_follow.mjs`, `smoke_test_scoring.mjs`,
 `smoke_test_library.mjs`, `smoke_test_history.mjs`, `smoke_test_playhead.mjs`,
 `smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`, `smoke_test_backing.mjs`,
-and `smoke_test_zoom.mjs` are Playwright scripts (not part of the
+`smoke_test_zoom.mjs`, `smoke_test_loop.mjs`, `smoke_test_progress.mjs`, and
+`smoke_test_instruments.mjs` are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
 play modes, and PDF/Word lead sheet import. Several go a step further
