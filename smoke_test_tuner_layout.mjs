@@ -1,8 +1,10 @@
 // Verifies the Tuner view's layout: the display fills most of the view
 // (not the toggle button, which used to stretch full-height because it
 // reused .mode-btn's flex:1 sizing meant for a horizontal row of
-// buttons), and nothing reflows when a reading actually appears -- a
-// fresh note reading must not change the display or button's size.
+// buttons), and nothing reflows either when the tuner actually starts
+// (the debug line used to be display:none until then) or when a reading
+// appears -- a fresh note reading must not change the display or
+// button's size.
 import { chromium } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -42,9 +44,17 @@ if (btnBox.height > 50) {
 }
 
 await page.click('#tunerToggleBtn');
-await page.waitForTimeout(300); // mic granted, debug line now visible, but no note detected yet
+await page.waitForTimeout(300); // mic granted, debug line now populated, but no note detected yet
 const displayBoxNoNote = await page.locator('.tuner-display').boundingBox();
 const btnBoxNoNote = await page.locator('#tunerToggleBtn').boundingBox();
+
+// Starting the tuner (which populates the debug line for the first time)
+// must not move the button -- its space is reserved whether or not the
+// tuner is actually running.
+console.log('button y before start:', btnBox.y, '| after start:', btnBoxNoNote.y);
+if (Math.abs(btnBoxNoNote.y - btnBox.y) > 1) {
+  throw new Error(`Starting the tuner moved the button: y=${btnBox.y} -> y=${btnBoxNoNote.y}`);
+}
 
 await page.waitForTimeout(1200); // now a note should be detected
 const note = await page.textContent('#tunerNote');

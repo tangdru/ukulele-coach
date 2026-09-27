@@ -200,6 +200,14 @@ button {
   font-weight: 400;
   color: var(--text-dim);
   font-size: 0.72rem;
+  /* Reserves room for its longest realistic line (it can wrap to two on a
+     narrow phone) so starting/stopping the tuner -- which is when this
+     text switches between blank and populated -- never shifts anything
+     above or below it. A pixel value, not em: this text's actual two-line
+     wrapped height didn't match a quick em-based estimate (em here is
+     relative to this element's own font-size, easy to get wrong), so this
+     was measured directly against the real rendered content instead. */
+  min-height: 34px;
 }
 .rhythm-stats { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .stat { text-align: center; }

@@ -909,7 +909,7 @@
       tuner.stop();
       tunerRunning = false;
       if (tunerDebugRafId) cancelAnimationFrame(tunerDebugRafId);
-      $('tunerDebug').classList.add('hidden');
+      $('tunerDebug').innerHTML = '&nbsp;'; // keep the reserved line, just empty
       $('tunerToggleLabel').textContent = 'Start Tuner';
       return;
     }
@@ -945,7 +945,6 @@
     tuner.start();
     tunerRunning = true;
     $('tunerToggleLabel').textContent = 'Stop Tuner';
-    $('tunerDebug').classList.remove('hidden');
     tunerDebugLoop();
   });
 
