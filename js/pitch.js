@@ -9,13 +9,26 @@ function autoCorrelate(buf, sampleRate) {
   const SIZE = buf.length;
 
   let rms = 0;
-  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  let peak = 0;
+  for (let i = 0; i < SIZE; i++) {
+    rms += buf[i] * buf[i];
+    const a = Math.abs(buf[i]);
+    if (a > peak) peak = a;
+  }
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.008) return -1; // too quiet / silence
+  // A raw (no auto-gain) mic signal from a real acoustic instrument a few
+  // inches/feet from the phone can sit well under 0.01 RMS -- nowhere
+  // near loud enough to trip a threshold tuned against a full-scale
+  // synthesized test tone, but still a perfectly usable signal.
+  if (rms < 0.0003) return -1; // too quiet / silence
 
   // Trim leading/trailing near-zero samples so the autocorrelation window
-  // is centered on signal rather than silence.
-  const threshold = 0.2;
+  // is centered on signal rather than silence. Relative to this buffer's
+  // own peak, not a fixed absolute level -- a fixed 0.2, for instance,
+  // assumes a signal loud enough to regularly swing that wide, which a
+  // quiet raw mic signal never does, and would trim the entire buffer
+  // down to nothing before autocorrelation ever runs.
+  const threshold = peak * 0.2;
   let start = 0;
   while (start < SIZE / 2 && Math.abs(buf[start]) < threshold) start++;
   let end = SIZE - 1;

@@ -2,12 +2,16 @@
 // feeding into Chromium's --use-file-for-fake-audio-capture in tests.
 import fs from 'node:fs';
 
-const [, , freqStr, outPath, durationStr] = process.argv;
+const [, , freqStr, outPath, durationStr, amplitudeStr] = process.argv;
 const freq = parseFloat(freqStr);
 const durationSec = parseFloat(durationStr || '5');
 const sampleRate = 44100;
 const numSamples = Math.floor(sampleRate * durationSec);
-const amplitude = 0.5 * 32767;
+// Defaults to a loud, clean tone (fraction of full scale); an explicit
+// 5th arg lets a test simulate a much quieter raw-mic signal instead,
+// like a real acoustic instrument picked up a few feet from a phone with
+// auto-gain off, rather than a synthesized tone at full volume.
+const amplitude = parseFloat(amplitudeStr || '0.5') * 32767;
 
 const dataSize = numSamples * 2;
 const buf = Buffer.alloc(44 + dataSize);
