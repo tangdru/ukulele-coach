@@ -160,15 +160,21 @@ below are the explanations, kept in this README instead of on screen.
   later chords on it off past the edge. Perform and Practice don't
   combine — Practice needs the metronome's fixed clock to score against,
   which is exactly what Perform deliberately doesn't run.
-- **Tuner** — continuous pitch detection (autocorrelation) with a note name,
-  cents-off needle, and nearest-open-string hint (D3/G3/B3/E4). It picks up
-  any clear pitch in range, not just a baritone uke specifically — a pitch
-  detector can't tell a plucked string from a sung note at the same pitch,
-  nothing short of a real instrument-timbre classifier can, so this
-  doesn't try to filter by source. The cents reading is smoothed (eased
-  toward each new reading rather than jumping straight to it, snapping
-  instantly on an actual note change) so the needle settles instead of
-  jittering frame-to-frame.
+- **Tuner** — continuous pitch detection (autocorrelation) with a note
+  name, a needle, and Flat/Sharp labels flanking the dial (rather than a
+  raw cents number) that light up on whichever side you're off, within
+  the same ±5-cent band that turns the needle green when you're in tune.
+  It picks up any clear pitch in range, not just a baritone uke
+  specifically — a pitch detector can't tell a plucked string from a sung
+  note at the same pitch, nothing short of a real instrument-timbre
+  classifier can, so this doesn't try to filter by source. The underlying
+  pitch reading goes through two stabilizing passes before it ever
+  reaches the display: the raw per-frame frequency is median-filtered
+  over a short rolling window (a single noisy frame gets outvoted by its
+  neighbors), and switching the displayed note to a *different* one
+  requires several consecutive frames to agree first, so a brief misfire
+  on a real acoustic signal holds the previous note steady instead of
+  flickering.
 - **Key** — read from the chart's `{key: ...}` directive, or tap the 🔑
   icon in the top bar to listen for 6 seconds and estimate the key via a
   chroma histogram + Krumhansl-Schmuckler key-profile correlation.
@@ -258,7 +264,7 @@ library's database.
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_tuner_quiet.mjs`, `smoke_test_tuner_stability.mjs`,
-`smoke_test_tuner_layout.mjs`, `smoke_test_follow.mjs`,
+`smoke_test_tuner_layout.mjs`, `smoke_test_tuner_flatsharp.mjs`, `smoke_test_follow.mjs`,
 `smoke_test_scoring.mjs`, `smoke_test_library.mjs`, `smoke_test_history.mjs`,
 `smoke_test_playhead.mjs`, `smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`,
 `smoke_test_backing.mjs`, `smoke_test_zoom.mjs`, `smoke_test_loop.mjs`,

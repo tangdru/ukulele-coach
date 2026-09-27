@@ -1,9 +1,9 @@
 // Verifies the tuner's actual pitch-detection behavior using real
 // synthesized audio through Chromium's fake-audio-capture device -- not
 // just that the UI wires up, but that it correctly identifies a clean
-// tone and that the displayed cents value stays reasonably smooth
-// frame-to-frame (regression coverage for the "jumpy dial" fix: cents
-// are eased toward each new reading rather than snapping to it).
+// tone and that the needle's cents-derived rotation stays reasonably
+// smooth frame-to-frame (regression coverage for the "jumpy dial" fix:
+// cents are eased toward each new reading rather than snapping to it).
 //
 // Earlier versions of this test also asserted the tuner stays blank
 // against white noise. That relied on a stricter clarity/frequency-range
@@ -37,12 +37,22 @@ await page.goto('http://127.0.0.1:8934/index.html');
 await page.click('#railTuner');
 await page.click('#tunerToggleBtn');
 
+// The cents value isn't shown as text (a Flat/Sharp indicator flanks the
+// dial instead) -- read it back off the needle's own rotation, the same
+// angle = cents * 0.9 (clamped to ±45°) app.js sets it to, so this test
+// still verifies the actual smoothing behavior rather than a redundant
+// hidden number.
+async function readNeedleCents(page) {
+  const transform = await page.evaluate(() => document.getElementById('tunerNeedle').style.transform);
+  const m = transform.match(/rotate\(([-\d.]+)deg\)/);
+  return m ? Math.round(parseFloat(m[1]) / 0.9) : null;
+}
+
 const readings = [];
 for (let i = 0; i < 22; i++) {
   await page.waitForTimeout(300);
   const note = await page.textContent('#tunerNote');
-  const centsText = await page.textContent('#tunerCents');
-  const cents = centsText ? parseInt(centsText, 10) : null;
+  const cents = note !== '—' ? await readNeedleCents(page) : null;
   readings.push({ note, cents });
 }
 await browser.close();

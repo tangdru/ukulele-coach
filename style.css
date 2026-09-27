@@ -409,9 +409,10 @@ button {
 /* Tuner view -- the display is the whole point, so it takes the lion's
    share of the view and stays centered as the one thing that grows; the
    toggle button is a plain small control underneath it, not another
-   full-width mode button. Every readout that switches between empty and
-   populated (cents, the note itself) gets a reserved min-height so a
-   fresh reading never reflows the button/debug line beneath it. */
+   full-width mode button. The note readout gets a reserved min-height so
+   a fresh reading never reflows the button/debug line beneath it; Flat/
+   Sharp are static labels that only ever change color, never appear or
+   disappear, so they need no such reservation themselves. */
 .tuner-display {
   flex: 1 1 auto;
   min-height: 0;
@@ -424,11 +425,31 @@ button {
 }
 .tuner-toggle-btn { flex: 0 0 auto; align-self: center; margin-bottom: 6px; }
 .tuner-note { font-size: 3rem; font-weight: 700; min-height: 1.2em; }
+.tuner-meter-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+  width: 100%;
+  max-width: 320px;
+}
+.tuner-flat-sharp {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+.tuner-flat-sharp.active { color: var(--warn); }
 .tuner-meter {
   position: relative;
-  width: 220px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 220px;
   height: 60px;
-  margin: 12px auto;
   border-bottom: 2px solid var(--panel-border);
 }
 .tuner-meter-center-line {
@@ -451,7 +472,6 @@ button {
   transition: transform 0.08s linear, background 0.15s;
 }
 .tuner-needle.in-tune { background: var(--accent-strong); }
-.tuner-cents { color: var(--text-dim); min-height: 1.4em; }
 .tuner-string-hint { margin-top: 10px; color: var(--accent); font-size: 0.9rem; min-height: 1.4em; }
 
 /* Left icon rail */

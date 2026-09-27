@@ -150,11 +150,14 @@
       <section id="view-tuner" class="view hidden">
         <div class="tuner-display">
           <div id="tunerNote" class="tuner-note">&mdash;</div>
-          <div class="tuner-meter">
-            <div id="tunerNeedle" class="tuner-needle"></div>
-            <div class="tuner-meter-center-line"></div>
+          <div class="tuner-meter-row">
+            <span id="tunerFlat" class="tuner-flat-sharp">Flat</span>
+            <div class="tuner-meter">
+              <div id="tunerNeedle" class="tuner-needle"></div>
+              <div class="tuner-meter-center-line"></div>
+            </div>
+            <span id="tunerSharp" class="tuner-flat-sharp">Sharp</span>
           </div>
-          <div id="tunerCents" class="tuner-cents"></div>
           <div id="tunerString" class="tuner-string-hint"></div>
         </div>
         <button id="tunerToggleBtn" class="secondary-btn tuner-toggle-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-mic" /></svg> <span id="tunerToggleLabel">Start Tuner</span></button>

@@ -2,7 +2,7 @@
 // (not the toggle button, which used to stretch full-height because it
 // reused .mode-btn's flex:1 sizing meant for a horizontal row of
 // buttons), and nothing reflows when a reading actually appears -- a
-// fresh note/cents value must not change the display or button's size.
+// fresh note reading must not change the display or button's size.
 import { chromium } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -48,15 +48,14 @@ const btnBoxNoNote = await page.locator('#tunerToggleBtn').boundingBox();
 
 await page.waitForTimeout(1200); // now a note should be detected
 const note = await page.textContent('#tunerNote');
-const cents = await page.textContent('#tunerCents');
 const displayBoxWithNote = await page.locator('.tuner-display').boundingBox();
 const btnBoxWithNote = await page.locator('#tunerToggleBtn').boundingBox();
 
-console.log('note:', note, cents);
+console.log('note:', note);
 console.log('display height before note:', displayBoxNoNote.height, '| after note:', displayBoxWithNote.height);
 console.log('button height before note:', btnBoxNoNote.height, '| after note:', btnBoxWithNote.height);
 
-if (note === '—' || !cents) throw new Error('Expected a note to actually be detected for this check to be meaningful');
+if (note === '—') throw new Error('Expected a note to actually be detected for this check to be meaningful');
 if (Math.abs(displayBoxWithNote.height - displayBoxNoNote.height) > 1) {
   throw new Error(`Tuner display reflowed when a note appeared: ${displayBoxNoNote.height}px -> ${displayBoxWithNote.height}px`);
 }

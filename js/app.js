@@ -919,22 +919,28 @@
     tuner.onUpdate = (info) => {
       if (!info) {
         $('tunerNote').textContent = '—';
-        $('tunerCents').textContent = '';
         $('tunerString').textContent = '';
         $('tunerNeedle').style.transform = 'translateX(-50%) rotate(0deg)';
+        $('tunerNeedle').classList.remove('in-tune');
+        $('tunerFlat').classList.remove('active');
+        $('tunerSharp').classList.remove('active');
         return;
       }
       $('tunerNote').textContent = `${info.noteName}${info.octave}`;
-      $('tunerCents').textContent = (info.cents > 0 ? '+' : '') + info.cents + ' cents';
       // sax-testing branch: the "nearest baritone string" hint doesn't mean
       // anything on a non-string instrument, and would be actively
       // misleading here (e.g. showing "G3" while a concert G4 plays) --
-      // pitch detection itself is instrument-agnostic, so note name + cents
+      // pitch detection itself is instrument-agnostic, so note name alone
       // is exactly what's needed to validate it against a real sax.
       $('tunerString').textContent = '';
       const angle = Math.max(-45, Math.min(45, info.cents * 0.9));
       $('tunerNeedle').style.transform = `translateX(-50%) rotate(${angle}deg)`;
-      $('tunerNeedle').classList.toggle('in-tune', Math.abs(info.cents) <= 5);
+      const inTune = Math.abs(info.cents) <= 5;
+      $('tunerNeedle').classList.toggle('in-tune', inTune);
+      // Flat/sharp read off the same ±5-cent "in tune" band the needle
+      // already uses, rather than a separate number to interpret.
+      $('tunerFlat').classList.toggle('active', !inTune && info.cents < 0);
+      $('tunerSharp').classList.toggle('active', !inTune && info.cents > 0);
     };
     tuner.start();
     tunerRunning = true;
