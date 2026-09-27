@@ -3,8 +3,6 @@
   let analyser = null;
   let micStream = null;
   let micSource = null;
-  let tunerMicStream = null;
-  let tunerAnalyser = null;
 
   let currentSong = null;
   let metronome = null;
@@ -76,31 +74,6 @@
       analyser.fftSize = 2048;
       micSource.connect(analyser);
       metronome = metronome || new Metronome(audioCtx);
-      return true;
-    } catch (err) {
-      showMicError('Microphone access is needed for this feature: ' + (err.message || err));
-      return false;
-    }
-  }
-
-  // The Tuner listens to one sustained, held note -- the opposite need
-  // from onset/strum detection above: it wants the loudest, cleanest
-  // signal it can get, not a raw untouched one. Giving it its own stream
-  // with the browser's default processing (echo cancellation, noise
-  // suppression, and especially auto-gain) left on means a quiet note on
-  // a real phone mic still reaches a usable level, rather than sharing
-  // ensureMic()'s AGC-off stream and silently never crossing the pitch
-  // detector's "is this actually signal" amplitude gate.
-  async function ensureTunerMic() {
-    if (tunerMicStream) return true;
-    try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      await audioCtx.resume(); // see ensureMic's comment on iOS Safari
-      tunerMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const tunerSource = audioCtx.createMediaStreamSource(tunerMicStream);
-      tunerAnalyser = audioCtx.createAnalyser();
-      tunerAnalyser.fftSize = 2048;
-      tunerSource.connect(tunerAnalyser);
       return true;
     } catch (err) {
       showMicError('Microphone access is needed for this feature: ' + (err.message || err));
@@ -890,9 +863,9 @@
       $('tunerToggleLabel').textContent = 'Start Tuner';
       return;
     }
-    const ok = await ensureTunerMic();
+    const ok = await ensureMic();
     if (!ok) return;
-    tuner = tuner || new Tuner(audioCtx, tunerAnalyser);
+    tuner = tuner || new Tuner(audioCtx, analyser);
     tuner.onUpdate = (info) => {
       if (!info) {
         $('tunerNote').textContent = '—';

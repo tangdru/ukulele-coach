@@ -17,7 +17,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 const toneWav = path.join(os.tmpdir(), 'uke_tuner_test_d3.wav');
-execFileSync('node', ['gen_test_tone.mjs', '146.83', toneWav, '4']);
+execFileSync('node', ['gen_test_tone.mjs', '146.83', toneWav, '7']);
 
 const browser = await chromium.launch({
   executablePath: '/opt/pw-browsers/chromium',
@@ -38,7 +38,7 @@ await page.click('#railTuner');
 await page.click('#tunerToggleBtn');
 
 const readings = [];
-for (let i = 0; i < 16; i++) {
+for (let i = 0; i < 22; i++) {
   await page.waitForTimeout(300);
   const note = await page.textContent('#tunerNote');
   const centsText = await page.textContent('#tunerCents');
@@ -53,6 +53,18 @@ if (errors.length) throw new Error('page errors: ' + errors.join('; '));
 const distinctNotes = new Set(readings.map((r) => r.note).filter((n) => n !== '—'));
 if (distinctNotes.size !== 1 || !distinctNotes.has('D3')) {
   throw new Error(`Expected a stable, exclusive "D3" reading, got: ${[...distinctNotes]}`);
+}
+
+// Direct regression coverage for "detects the note briefly, then goes
+// blank for good" -- a real bug that once slipped past this test because
+// it only checked that whatever readings *did* land agreed with each
+// other, not that they kept landing. The tail end of a ~6.5s window
+// (well past the note's onset) should still be reading, continuously.
+const tailReadings = readings.slice(-8);
+const blankInTail = tailReadings.filter((r) => r.note === '—').length;
+console.log('Blank readings in the tail window:', blankInTail, '/', tailReadings.length);
+if (blankInTail > 1) {
+  throw new Error(`Tuner stopped reading partway through: ${blankInTail}/${tailReadings.length} blank readings near the end of a sustained tone`);
 }
 
 const centsValues = readings.map((r) => r.cents).filter((c) => c !== null);
