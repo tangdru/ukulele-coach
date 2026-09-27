@@ -479,7 +479,7 @@
 
   function highlightLoop() {
     if (!scrollActive) return;
-    let now = audioCtx.currentTime;
+    const now = audioCtx.currentTime;
     // Looping a section: once playback runs past the end of the loop
     // range, re-anchor the schedule back to loopStart -- same "shift
     // scrollStartTime so this index lands at now" trick jumpToLine()
@@ -489,16 +489,28 @@
     // very last line, idx can never go past it (lineStartTimes has no
     // further entries to return), so it would otherwise just sit there
     // instead of wrapping.
+    let idx;
     if (loopStart >= 0) {
       const bpm = parseInt($('tempoInput').value, 10) || 90;
       const secondsPerLine = (beatsPerLine() * 60) / bpm;
       if (now >= lineStartTimes[loopEnd] + secondsPerLine) {
         scrollStartTime = now - loopStart * secondsPerLine;
         lineStartTimes = flatLines.map((_, i) => scrollStartTime + i * secondsPerLine);
-        now = audioCtx.currentTime;
+        // The wrapped index is loopStart by construction -- re-deriving it
+        // from lineIndexAt(now) here would compare `now` against the
+        // timestamp just computed from it via a subtract-then-add
+        // round-trip, which floating-point rounding doesn't always land
+        // back on exactly `now`. When it rounds a hair high, the <= check
+        // fails and idx falls back to loopStart-1 for a single frame --
+        // a real, if rare, flicker at the seam. Skipping that re-derivation
+        // avoids the rounding risk entirely instead of chasing it.
+        idx = loopStart;
+      } else {
+        idx = lineIndexAt(now);
       }
+    } else {
+      idx = lineIndexAt(now);
     }
-    const idx = lineIndexAt(now);
     if (idx !== activeLineIndex) {
       if (activeLineIndex >= 0 && flatLines[activeLineIndex]) {
         flatLines[activeLineIndex].classList.remove('active-line');
