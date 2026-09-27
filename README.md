@@ -257,7 +257,7 @@ library's database.
 ## Testing
 
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
-`smoke_test_tuner.mjs`, `smoke_test_tuner_quiet.mjs`, `smoke_test_follow.mjs`,
+`smoke_test_tuner.mjs`, `smoke_test_tuner_quiet.mjs`, `smoke_test_tuner_stability.mjs`, `smoke_test_follow.mjs`,
 `smoke_test_scoring.mjs`, `smoke_test_library.mjs`, `smoke_test_history.mjs`,
 `smoke_test_playhead.mjs`, `smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`,
 `smoke_test_backing.mjs`, `smoke_test_zoom.mjs`, `smoke_test_loop.mjs`,
