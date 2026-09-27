@@ -372,23 +372,33 @@ button {
 .piano-key-root { fill: var(--accent-strong); }
 
 /* Saxophone chord "diagram": a monophonic instrument can't voice a full
-   chord, so this lists each tone as a written note (transposed for the
-   player's horn) instead of drawing fingering keys. */
+   chord at once, so this is a row of small per-note fingering diagrams
+   (one per chord tone) instead of one shape to hold -- each labeled with
+   its written note (transposed for the player's horn) and role. */
 .sax-diagram-subtitle { color: var(--text-dim); font-size: 0.72rem; margin-bottom: 8px; }
-.sax-chord-tones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+.sax-chord-tones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .sax-chord-tone {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 4px 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
   border-radius: 6px;
   background: var(--bg);
-  border-left: 3px solid var(--accent);
+  border-top: 3px solid var(--accent);
+  min-width: 44px;
 }
-.sax-chord-tone-root { border-left-color: var(--accent-strong); }
-.sax-chord-tone-written { font-weight: 700; font-size: 1rem; min-width: 24px; }
-.sax-chord-tone-role { color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.sax-chord-tone-sounds { color: var(--text-dim); font-size: 0.72rem; margin-left: auto; }
+.sax-chord-tone-root { border-top-color: var(--accent-strong); }
+.sax-chord-tone-written { font-weight: 700; font-size: 1rem; }
+.sax-chord-tone-role { color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.sax-chord-tone-sounds { color: var(--text-dim); font-size: 0.68rem; }
+
+.sax-tone-svg { width: 26px; height: 84px; }
+.sax-key-dot { stroke: var(--text-dim); stroke-width: 1; }
+.sax-key-open { fill: none; }
+.sax-key-pressed { fill: var(--accent); }
+.sax-chord-tone-root .sax-key-pressed { fill: var(--accent-strong); }
+.sax-tone-extra { color: var(--text-dim); font-size: 0.62rem; text-align: center; line-height: 1.2; }
 
 /* Tuner view */
 .tuner-display { text-align: center; padding: 20px 0; }

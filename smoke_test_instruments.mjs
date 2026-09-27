@@ -44,7 +44,7 @@ if (activeKeys < 3) throw new Error('Expected at least 3 highlighted piano keys 
 if (rootKeys !== 1) throw new Error('Expected exactly one key marked as the root');
 await page.click('#chordModal .chord-modal-backdrop', { position: { x: 5, y: 5 } });
 
-// --- Switch to Saxophone: written note list, correctly transposed for alto ---
+// --- Switch to Saxophone: per-note fingering diagrams, transposed for alto ---
 await page.selectOption('#instrumentSelect', 'saxophone');
 await openChordModalFor('C');
 const toneCount = await page.locator('.sax-chord-tones .sax-chord-tone').count();
@@ -55,6 +55,16 @@ if (toneCount !== 3) throw new Error('Expected 3 chord tones (root/3rd/5th) for 
 // Alto (Eb) is a famous, unambiguous reference point: concert C is written A.
 if (rootToneText.trim() !== 'A') throw new Error(`Expected alto's written root for concert C to be "A", got "${rootToneText}"`);
 if (!allWritten.includes('C#') || !allWritten.includes('E')) throw new Error(`Expected the 3rd/5th to transpose to C# and E, got ${allWritten.join(',')}`);
+
+// Each tone gets its own 6-key fingering diagram (from the Standard of
+// Excellence chart); the root (written A) is the simplest note on the
+// horn -- just the left index finger, one dot pressed out of six.
+const totalDots = await page.locator('.sax-key-dot').count();
+const rootDots = await page.locator('.sax-chord-tone-root .sax-key-dot').count();
+const rootPressed = await page.locator('.sax-chord-tone-root .sax-key-pressed').count();
+console.log('Saxophone: total fingering dots:', totalDots, '| root dots:', rootDots, '| root pressed:', rootPressed);
+if (totalDots !== toneCount * 6) throw new Error(`Expected 6 fingering dots per chord tone, found ${totalDots} across ${toneCount} tones`);
+if (rootDots !== 6 || rootPressed !== 1) throw new Error(`Expected written A's fingering to be exactly 1 pressed key of 6, got ${rootPressed}/${rootDots}`);
 await page.click('#chordModal .chord-modal-backdrop', { position: { x: 5, y: 5 } });
 
 // --- The choice persists across a reload ---

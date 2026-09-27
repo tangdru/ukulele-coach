@@ -87,13 +87,14 @@ below are the explanations, kept in this README instead of on screen.
     root marked distinctly. No fingering search needed — piano keys are
     already laid out by pitch, unlike a fretboard.
   - **Saxophone** — a saxophone can only play one note at a time, so
-    instead of a diagram it lists the chord's notes to read or improvise
-    from, transposed to alto (Eb) written pitch (e.g. concert C is shown
-    as the alto's written A) alongside each note's role (root/3rd/5th/…).
-    There's deliberately no fingering-key diagram here yet — encoding a
-    saxophone's actual key combinations wrong would teach bad technique,
-    and that data wasn't something this could verify from this
-    environment; it can be added later against a confirmed chart.
+    instead of one diagram it shows a small fingering diagram *per chord
+    tone*, each labeled with its written note (transposed to alto/Eb —
+    e.g. concert C is shown as the alto's written A) and role
+    (root/3rd/5th/…). Fingerings (`js/chords-saxophone.js`) are
+    transcribed from the Standard of Excellence Eb alto fingering chart,
+    covering one full chromatic octave (written Bb3–A4) with no
+    register/octave key needed — the primary/first-listed fingering only,
+    no alternates.
 
   The choice persists (`localStorage`) and also changes what Learn mode's
   backing track plays: ukulele's/piano's full voicing, or just the root
