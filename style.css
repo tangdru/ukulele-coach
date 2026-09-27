@@ -406,9 +406,24 @@ button {
 .sax-chord-tone-root .sax-key-pressed { fill: var(--accent-strong); }
 .sax-tone-extra { color: var(--text-dim); font-size: 0.62rem; text-align: center; line-height: 1.2; }
 
-/* Tuner view */
-.tuner-display { text-align: center; padding: 20px 0; }
-.tuner-note { font-size: 3rem; font-weight: 700; }
+/* Tuner view -- the display is the whole point, so it takes the lion's
+   share of the view and stays centered as the one thing that grows; the
+   toggle button is a plain small control underneath it, not another
+   full-width mode button. Every readout that switches between empty and
+   populated (cents, the note itself) gets a reserved min-height so a
+   fresh reading never reflows the button/debug line beneath it. */
+.tuner-display {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px 0;
+}
+.tuner-toggle-btn { flex: 0 0 auto; align-self: center; margin-bottom: 6px; }
+.tuner-note { font-size: 3rem; font-weight: 700; min-height: 1.2em; }
 .tuner-meter {
   position: relative;
   width: 220px;
@@ -436,8 +451,8 @@ button {
   transition: transform 0.08s linear, background 0.15s;
 }
 .tuner-needle.in-tune { background: var(--accent-strong); }
-.tuner-cents { color: var(--text-dim); }
-.tuner-string-hint { margin-top: 10px; color: var(--accent); font-size: 0.9rem; }
+.tuner-cents { color: var(--text-dim); min-height: 1.4em; }
+.tuner-string-hint { margin-top: 10px; color: var(--accent); font-size: 0.9rem; min-height: 1.4em; }
 
 /* Left icon rail */
 .rail {
