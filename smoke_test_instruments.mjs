@@ -67,6 +67,24 @@ if (totalDots !== toneCount * 6) throw new Error(`Expected 6 fingering dots per 
 if (rootDots !== 6 || rootPressed !== 1) throw new Error(`Expected written A's fingering to be exactly 1 pressed key of 6, got ${rootPressed}/${rootDots}`);
 await page.click('#chordModal .chord-modal-backdrop', { position: { x: 5, y: 5 } });
 
+// F# fingering (LH1,LH2,LH3,RH2 -- corrected against the reference chart,
+// not the RH-fully-open guess this originally shipped with). Concert A
+// major's root transposes to alto's written F#, but the loaded chart has
+// no "A" chord, so render it directly into a detached element instead of
+// clicking through the chart.
+const fSharpKeys = await page.evaluate(() => {
+  const div = document.createElement('div');
+  window.ChordsSaxophone.renderChordDiagram(div, 'A');
+  const root = div.querySelector('.sax-chord-tone-root');
+  return {
+    written: root.querySelector('.sax-chord-tone-written').textContent.trim(),
+    pressed: root.querySelectorAll('.sax-key-pressed').length,
+  };
+});
+console.log('Saxophone: "A" chord root fingering:', fSharpKeys);
+if (fSharpKeys.written !== 'F#') throw new Error(`Expected concert A's written root to be "F#", got "${fSharpKeys.written}"`);
+if (fSharpKeys.pressed !== 4) throw new Error(`Expected F# to press exactly 4 keys (LH1,LH2,LH3,RH2), got ${fSharpKeys.pressed}`);
+
 // --- The choice persists across a reload ---
 await page.reload();
 await page.waitForSelector('#songTitle');

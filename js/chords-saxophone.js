@@ -35,7 +35,7 @@ const SAX_FINGERINGS = {
   3: { keys: ['LH1', 'LH2', 'LH3', 'RH1', 'RH2', 'RH3'], extra: ['low Eb'] }, // D#/Eb
   4: { keys: ['LH1', 'LH2', 'LH3', 'RH1', 'RH2'], extra: [] }, // E
   5: { keys: ['LH1', 'LH2', 'LH3', 'RH1'], extra: [] }, // F
-  6: { keys: ['LH1', 'LH2', 'LH3'], extra: [] }, // F#/Gb
+  6: { keys: ['LH1', 'LH2', 'LH3', 'RH2'], extra: [] }, // F#/Gb
   7: { keys: ['LH1', 'LH2'], extra: [] }, // G
   8: { keys: ['LH1', 'LH2'], extra: ['G#'] }, // G#/Ab
   9: { keys: ['LH1'], extra: [] }, // A
