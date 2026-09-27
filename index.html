@@ -14,10 +14,13 @@
      shape to keep the style consistent. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="icon-upload" viewBox="0 0 24 24">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
+    <symbol id="icon-list" viewBox="0 0 24 24">
+      <line x1="9" y1="6" x2="21" y2="6" />
+      <line x1="9" y1="12" x2="21" y2="12" />
+      <line x1="9" y1="18" x2="21" y2="18" />
+      <line x1="4" y1="6" x2="4.01" y2="6" />
+      <line x1="4" y1="12" x2="4.01" y2="12" />
+      <line x1="4" y1="18" x2="4.01" y2="18" />
     </symbol>
     <symbol id="icon-play" viewBox="0 0 24 24">
       <polygon points="6 3 20 12 6 21 6 3" />
@@ -81,8 +84,8 @@
 <div id="app">
 
   <nav class="rail" aria-label="Navigation">
-    <button id="railUpload" class="rail-btn" data-view="upload" type="button" title="Upload">
-      <svg class="rail-icon" aria-hidden="true"><use href="#icon-upload" /></svg><span class="rail-label">Upload</span>
+    <button id="railUpload" class="rail-btn" data-view="upload" type="button" title="Songs">
+      <svg class="rail-icon" aria-hidden="true"><use href="#icon-list" /></svg><span class="rail-label">Songs</span>
     </button>
     <button id="railPlay" class="rail-btn active" data-view="play" type="button" title="Play">
       <svg class="rail-icon" aria-hidden="true"><use href="#icon-play" /></svg><span class="rail-label">Play</span>
@@ -125,6 +128,13 @@
             Auto-scroll
           </label>
         </div>
+        <p id="queueStatus" class="status-line queue-status hidden">
+          <svg class="icon" aria-hidden="true"><use href="#icon-music" /></svg>
+          <span id="queueStatusText"></span>
+          <button id="queuePrevBtn" class="queue-nav-btn" type="button" title="Previous song in playlist">&lsaquo; Prev</button>
+          <button id="queueNextBtn" class="queue-nav-btn" type="button" title="Next song in playlist">Next &rsaquo;</button>
+          <button id="queueExitBtn" class="queue-nav-btn" type="button" title="Exit playlist">Exit</button>
+        </p>
         <p id="loopStatus" class="status-line hidden"><svg class="icon" aria-hidden="true"><use href="#icon-loop" /></svg> <span id="loopStatusText"></span></p>
         <p id="followStatus" class="status-line hidden"><svg class="icon" aria-hidden="true"><use href="#icon-headphones" /></svg> <span id="followStatusText"></span></p>
         <div id="analyzeStats" class="status-line rhythm-stats hidden">
@@ -137,7 +147,7 @@
         </div>
         <div class="song-view-wrap">
           <div id="songView" class="song-view">
-            <p class="empty-hint">Tap <svg class="icon" aria-hidden="true"><use href="#icon-upload" /></svg> to load a song.</p>
+            <p class="empty-hint">Tap <svg class="icon" aria-hidden="true"><use href="#icon-list" /></svg> to load a song.</p>
           </div>
           <div id="chartZoom" class="chart-zoom">
             <button id="zoomOutBtn" class="zoom-btn" type="button" title="Zoom out">&minus;</button>
@@ -178,12 +188,24 @@
     <div class="sheet-modal-backdrop"></div>
     <div class="sheet-modal-content">
       <div class="sheet-modal-header">
-        <span>Load a song</span>
+        <span>Songs</span>
         <button id="closeUploadBtn" class="icon-btn" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#icon-x" /></svg></button>
       </div>
 
-      <input id="songSearch" class="song-search" type="text" list="songDatalist" placeholder="Search songs…" autocomplete="off" />
-      <datalist id="songDatalist"></datalist>
+      <input id="songSearch" class="song-search" type="text" placeholder="Search songs…" autocomplete="off" />
+
+      <div id="playlistBar" class="playlist-bar" role="tablist">
+        <button class="playlist-chip active" type="button" data-playlist-id="" role="tab" aria-selected="true">All Songs</button>
+        <button id="newPlaylistBtn" class="playlist-chip playlist-chip-new" type="button">+ New playlist</button>
+      </div>
+
+      <div id="playlistActions" class="playlist-actions hidden">
+        <button id="playPlaylistBtn" class="secondary-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-play" /></svg> Play playlist</button>
+        <button id="renamePlaylistBtn" class="text-btn" type="button">Rename</button>
+        <button id="deletePlaylistBtn" class="text-btn" type="button">Delete</button>
+      </div>
+
+      <ul id="songList" class="song-list" role="listbox"></ul>
 
       <div class="upload-row">
         <label for="chordproFile" class="file-label secondary-btn">Upload file (.cho/.txt/.pdf/.docx/.html)</label>

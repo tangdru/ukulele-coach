@@ -121,3 +121,90 @@ function deleteSongFromLibrary(title) {
       });
   }
 }
+
+// ---------- Playlists: named, ordered lists of song titles ----------
+// Same load/cache/optimistic-write pattern as the song library above, kept
+// as a separate table/key since a playlist is a list of *references* to
+// songs (by title), not song content itself.
+
+const PLAYLISTS_LOCAL_KEY = 'ukeCoachPlaylists';
+const PLAYLISTS_TABLE = 'uke_playlists';
+
+let playlistCache = null; // array of {id, name, songs: [title, ...]}, null until first loaded
+
+function loadLocalPlaylists() {
+  try {
+    const raw = localStorage.getItem(PLAYLISTS_LOCAL_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalPlaylists(playlists) {
+  try {
+    localStorage.setItem(PLAYLISTS_LOCAL_KEY, JSON.stringify(playlists));
+  } catch {
+    // Storage full or unavailable -- not worth interrupting the user over.
+  }
+}
+
+async function ensurePlaylistsLoaded() {
+  if (playlistCache !== null) return playlistCache;
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await withTimeout(
+        supabaseClient.from(PLAYLISTS_TABLE).select('id, name, songs'),
+        4000
+      );
+      if (error) throw error;
+      playlistCache = data || [];
+      saveLocalPlaylists(playlistCache);
+      return playlistCache;
+    } catch (err) {
+      console.warn('Could not load playlists from database, using local copy:', err);
+    }
+  }
+
+  playlistCache = loadLocalPlaylists();
+  return playlistCache;
+}
+
+function allPlaylists() {
+  return playlistCache || [];
+}
+
+function savePlaylist(id, name, songs) {
+  if (playlistCache === null) playlistCache = [];
+  const idx = playlistCache.findIndex((p) => p.id === id);
+  const entry = { id, name, songs };
+  if (idx >= 0) playlistCache[idx] = entry;
+  else playlistCache.push(entry);
+  saveLocalPlaylists(playlistCache);
+
+  if (supabaseClient) {
+    supabaseClient
+      .from(PLAYLISTS_TABLE)
+      .upsert({ id, name, songs, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+      .then(({ error }) => {
+        if (error) console.warn('Could not sync playlist to database, saved locally only:', error);
+      });
+  }
+}
+
+function deletePlaylist(id) {
+  if (playlistCache !== null) playlistCache = playlistCache.filter((p) => p.id !== id);
+  saveLocalPlaylists(playlistCache || []);
+
+  if (supabaseClient) {
+    supabaseClient
+      .from(PLAYLISTS_TABLE)
+      .delete()
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) console.warn('Could not delete playlist from database:', error);
+      });
+  }
+}

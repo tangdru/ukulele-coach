@@ -103,17 +103,16 @@
 
   // ---------- Song loading & rendering ----------
 
-  function populateSongDatalist() {
-    const list = $('songDatalist');
-    list.innerHTML = '';
-    Object.keys(allAvailableSongs()).forEach((title) => {
-      const opt = document.createElement('option');
-      opt.value = title;
-      list.appendChild(opt);
-    });
+  let songTitles = [];
+  function refreshSongTitles() {
+    songTitles = Object.keys(allAvailableSongs());
+    // The library can finish an async load (Supabase, or falling back to
+    // localStorage) after the panel's already open -- re-render live
+    // rather than leaving the list stale until the panel is reopened.
+    renderSongList();
   }
 
-  function loadSong(chordproText) {
+  function loadSong(chordproText, fromQueue) {
     // Finalize/save any in-progress Analyze Me session against the *old*
     // song before its chart lines are replaced -- stopScroll() (called
     // here) is what records session history, and it needs the outgoing
@@ -135,9 +134,17 @@
 
     if (song.title) {
       saveSongToLibrary(song.title, chordproText);
-      populateSongDatalist();
+      refreshSongTitles();
     }
     closeUploadPanel();
+
+    // A song loaded any way other than the active playlist queue's own
+    // advance/prev/next logic (picked manually from the list, pasted,
+    // uploaded) ends that queue -- it no longer describes what's playing.
+    if (!fromQueue && activeQueue) {
+      activeQueue = null;
+      updateQueueStatus();
+    }
   }
 
   function renderSong(song) {
@@ -530,7 +537,9 @@
     // chord per beat.
     if (idx >= 0) setCurrentChord(idx, beatIndexInLine(idx, now));
     if (loopStart < 0 && idx >= lineStartTimes.length - 1 && now > lineStartTimes[lineStartTimes.length - 1] + 2) {
+      const endedMode = analyzeActive ? 'analyze' : 'metronome';
       stopScroll();
+      handleSongEnd(endedMode);
       return;
     }
     scrollRafId = requestAnimationFrame(highlightLoop);
@@ -617,6 +626,7 @@
     if (loopStart >= 0 && nextIdx > loopEnd) nextIdx = loopStart;
     if (nextIdx >= flatLines.length) {
       stopFollow();
+      handleSongEnd('follow');
       return;
     }
     if (flatLines[activeLineIndex]) flatLines[activeLineIndex].classList.remove('active-line');
@@ -648,6 +658,13 @@
   $('stopBtn').addEventListener('click', () => {
     stopScroll();
     stopFollow();
+    // A manual Stop is the player choosing to end the session -- unlike
+    // reaching a song's natural end, it shouldn't auto-advance, but it
+    // should still end the playlist queue rather than leave it stale.
+    if (activeQueue) {
+      activeQueue = null;
+      updateQueueStatus();
+    }
   });
 
   // ---------- Loop a section ----------
@@ -866,8 +883,10 @@
   }
 
   function openUploadPanel() {
+    // Deliberately doesn't auto-focus the search box -- the song list is
+    // already visible without typing anything, and focusing it would pop
+    // the on-screen keyboard up over most of that list on a phone.
     $('uploadPanel').classList.remove('hidden');
-    $('songSearch').focus();
   }
   function closeUploadPanel() {
     $('uploadPanel').classList.add('hidden');
@@ -973,21 +992,227 @@
 
   // ---------- Loading UI ----------
 
-  function loadByTitle(title) {
+  // fromQueue: true when this load is the active playlist queue's own
+  // advance/prev/next navigating -- everything else (picking a song by
+  // hand, pasting, uploading) ends that queue, see loadSong().
+  function loadByTitle(title, fromQueue) {
     const songs = allAvailableSongs();
     if (songs[title]) {
-      loadSong(songs[title]);
+      loadSong(songs[title], fromQueue);
       return true;
     }
     return false;
   }
 
-  $('songSearch').addEventListener('change', (e) => {
-    if (loadByTitle(e.target.value.trim())) e.target.value = '';
-  });
+  // ---------- Song library: browse/search list + playlists ----------
+  //
+  // Always-visible (not popup-on-focus) so there's a way to see everything
+  // available without typing anything -- a plain <input list>/<datalist>
+  // (and, before that, a focus-triggered custom dropdown) both left iOS
+  // Safari with no obvious way to just browse. Filtered live by the search
+  // box and, when a playlist chip is selected, sorted with that playlist's
+  // members first; a playlist's own "Play playlist" starts a sequenced
+  // practice session that auto-advances through it (see handleSongEnd).
+
+  let playlists = [];
+  let activePlaylistId = ''; // '' = the "All Songs" chip
+  let activeQueue = null; // { songs: [title, ...], index, name } while a playlist is playing sequenced
+
+  function currentPlaylist() {
+    return playlists.find((p) => p.id === activePlaylistId) || null;
+  }
+
+  function filterSongTitles(query) {
+    const q = query.trim().toLowerCase();
+    const list = q ? songTitles.filter((t) => t.toLowerCase().includes(q)) : songTitles.slice();
+    const pl = currentPlaylist();
+    if (pl) {
+      const members = new Set(pl.songs);
+      list.sort((a, b) => (members.has(a) === members.has(b) ? 0 : members.has(a) ? -1 : 1));
+    }
+    return list;
+  }
+
+  function renderSongList() {
+    const list = $('songList');
+    const matches = filterSongTitles($('songSearch').value);
+    const pl = currentPlaylist();
+    if (!matches.length) {
+      list.innerHTML = '<li class="song-list-empty">No matching songs</li>';
+      return;
+    }
+    list.innerHTML = matches
+      .map((title) => {
+        const esc = escapeHtml(title);
+        let toggle = '';
+        if (pl) {
+          const inPlaylist = pl.songs.includes(title);
+          toggle = `<button type="button" class="song-list-item-toggle${inPlaylist ? ' in-playlist' : ''}" data-title="${esc}" title="${inPlaylist ? 'Remove from' : 'Add to'} ${escapeHtml(pl.name)}">${inPlaylist ? '✓' : '+'}</button>`;
+        }
+        return `<li class="song-list-item" role="option" data-title="${esc}"><span class="song-list-item-title">${esc}</span>${toggle}</li>`;
+      })
+      .join('');
+  }
+
+  function selectSongTitle(title) {
+    loadByTitle(title);
+    $('songSearch').value = '';
+    renderSongList();
+  }
+
+  $('songSearch').addEventListener('input', renderSongList);
   $('songSearch').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && loadByTitle(e.target.value.trim())) e.target.value = '';
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const matches = filterSongTitles($('songSearch').value);
+      if (matches.length) selectSongTitle(matches[0]);
+    }
   });
+  $('songList').addEventListener('click', (e) => {
+    const toggle = e.target.closest('.song-list-item-toggle');
+    if (toggle) {
+      e.stopPropagation();
+      toggleSongInPlaylist(toggle.dataset.title);
+      return;
+    }
+    const item = e.target.closest('.song-list-item');
+    if (item && item.dataset.title) selectSongTitle(item.dataset.title);
+  });
+
+  function toggleSongInPlaylist(title) {
+    const pl = currentPlaylist();
+    if (!pl) return;
+    const idx = pl.songs.indexOf(title);
+    if (idx >= 0) pl.songs.splice(idx, 1);
+    else pl.songs.push(title);
+    savePlaylist(pl.id, pl.name, pl.songs);
+    renderSongList();
+  }
+
+  function refreshPlaylists() {
+    playlists = allPlaylists();
+    renderPlaylistChips();
+    renderSongList();
+  }
+
+  function renderPlaylistChips() {
+    const chips = [
+      `<button class="playlist-chip${activePlaylistId === '' ? ' active' : ''}" type="button" data-playlist-id="" role="tab" aria-selected="${activePlaylistId === '' ? 'true' : 'false'}">All Songs</button>`,
+    ];
+    playlists.forEach((p) => {
+      const active = activePlaylistId === p.id;
+      chips.push(`<button class="playlist-chip${active ? ' active' : ''}" type="button" data-playlist-id="${escapeHtml(p.id)}" role="tab" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(p.name)}</button>`);
+    });
+    chips.push('<button id="newPlaylistBtn" class="playlist-chip playlist-chip-new" type="button">+ New playlist</button>');
+    $('playlistBar').innerHTML = chips.join('');
+    $('playlistActions').classList.toggle('hidden', activePlaylistId === '');
+  }
+
+  function selectPlaylist(id) {
+    activePlaylistId = id;
+    renderPlaylistChips();
+    renderSongList();
+  }
+
+  // Delegated on the container, not the buttons -- renderPlaylistChips()
+  // replaces the chip buttons' innerHTML on every playlist change, which
+  // would silently drop a listener bound directly to any one of them.
+  $('playlistBar').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.id === 'newPlaylistBtn') {
+      const name = (window.prompt('Name this playlist:') || '').trim();
+      if (!name) return;
+      const id = window.crypto && crypto.randomUUID ? crypto.randomUUID() : `pl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      playlists.push({ id, name, songs: [] });
+      savePlaylist(id, name, []);
+      selectPlaylist(id);
+      return;
+    }
+    selectPlaylist(btn.dataset.playlistId || '');
+  });
+
+  $('renamePlaylistBtn').addEventListener('click', () => {
+    const pl = currentPlaylist();
+    if (!pl) return;
+    const name = (window.prompt('Rename playlist:', pl.name) || '').trim();
+    if (!name) return;
+    pl.name = name;
+    savePlaylist(pl.id, name, pl.songs);
+    renderPlaylistChips();
+  });
+
+  $('deletePlaylistBtn').addEventListener('click', () => {
+    const pl = currentPlaylist();
+    if (!pl) return;
+    if (!window.confirm(`Delete playlist "${pl.name}"? This won't delete the songs themselves.`)) return;
+    deletePlaylist(pl.id);
+    playlists = playlists.filter((p) => p.id !== pl.id);
+    if (activeQueue && activeQueue.name === pl.name) {
+      activeQueue = null;
+      updateQueueStatus();
+    }
+    selectPlaylist('');
+  });
+
+  $('playPlaylistBtn').addEventListener('click', () => {
+    const pl = currentPlaylist();
+    if (!pl || !pl.songs.length) return;
+    activeQueue = { songs: pl.songs.slice(), index: 0, name: pl.name };
+    updateQueueStatus();
+    loadByTitle(activeQueue.songs[0], true);
+  });
+
+  // ---------- Playlist queue: sequenced practice session ----------
+  // A "Play playlist" session auto-advances to the next song once the
+  // current one reaches its natural end (see handleSongEnd, called from
+  // highlightLoop's/advanceFollowLine's own natural-end branches) --
+  // never on a manual Stop, which is the player choosing to end things.
+
+  function updateQueueStatus() {
+    const bar = $('queueStatus');
+    if (!activeQueue) {
+      bar.classList.add('hidden');
+      return;
+    }
+    bar.classList.remove('hidden');
+    $('queueStatusText').textContent = `${activeQueue.name} (${activeQueue.index + 1}/${activeQueue.songs.length})`;
+    $('queuePrevBtn').disabled = activeQueue.index <= 0;
+    $('queueNextBtn').disabled = activeQueue.index >= activeQueue.songs.length - 1;
+  }
+
+  function goToQueueIndex(newIndex) {
+    if (!activeQueue || newIndex < 0 || newIndex >= activeQueue.songs.length) return;
+    activeQueue.index = newIndex;
+    loadByTitle(activeQueue.songs[newIndex], true);
+    updateQueueStatus();
+  }
+
+  $('queuePrevBtn').addEventListener('click', () => activeQueue && goToQueueIndex(activeQueue.index - 1));
+  $('queueNextBtn').addEventListener('click', () => activeQueue && goToQueueIndex(activeQueue.index + 1));
+  $('queueExitBtn').addEventListener('click', () => {
+    activeQueue = null;
+    updateQueueStatus();
+  });
+
+  // Called when a song reaches its natural end (not a manual Stop) in
+  // whichever mode was running. Advances the queue and resumes the same
+  // mode on the next song, or just clears the (now-finished) queue.
+  function handleSongEnd(mode) {
+    if (!activeQueue || activeQueue.index >= activeQueue.songs.length - 1) {
+      if (activeQueue) {
+        activeQueue = null;
+        updateQueueStatus();
+      }
+      return;
+    }
+    activeQueue.index++;
+    loadByTitle(activeQueue.songs[activeQueue.index], true);
+    updateQueueStatus();
+    if (mode === 'metronome') startScroll(false);
+    else if (mode === 'analyze') startScroll(true);
+    else if (mode === 'follow') startFollow();
+  }
 
   $('togglePasteBtn').addEventListener('click', () => {
     $('pasteArea').classList.toggle('hidden');
@@ -1074,10 +1299,11 @@
     e.target.value = '';
   });
 
-  // Demos are available instantly; the saved-song library (Supabase, or
-  // localStorage if not configured) loads asynchronously and re-populates
-  // the datalist once it's in, rather than blocking on it.
-  populateSongDatalist();
-  ensureSongLibraryLoaded().then(populateSongDatalist);
+  // Demos are available instantly; the saved-song library and playlists
+  // (Supabase, or localStorage if not configured) load asynchronously and
+  // refresh the browsable list once they're in, rather than blocking on it.
+  refreshSongTitles();
+  ensureSongLibraryLoaded().then(refreshSongTitles);
+  ensurePlaylistsLoaded().then(refreshPlaylists);
   ensureSessionHistoryLoaded();
 })();

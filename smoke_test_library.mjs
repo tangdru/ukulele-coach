@@ -36,14 +36,16 @@ await page.waitForSelector('#songTitle');
 await page.click('#railUpload');
 
 // The library load has an internal 4s timeout before falling back to
-// localStorage (see songlibrary.js), so poll for the option to appear
-// rather than guessing a fixed wait.
+// localStorage (see songlibrary.js), so poll for the item to appear
+// rather than guessing a fixed wait. The song list is visible as soon as
+// the panel opens; refreshSongTitles() re-renders it live once the async
+// library load resolves.
 await page.waitForFunction(
-  () => [...document.querySelectorAll('#songDatalist option')].some((o) => o.value === 'Persisted Song'),
+  () => [...document.querySelectorAll('#songList .song-list-item')].some((o) => o.dataset.title === 'Persisted Song'),
   { timeout: 8000 }
 );
-const options = await page.locator('#songDatalist option').evaluateAll((opts) => opts.map((o) => o.value));
-console.log('datalist after reload:', options);
+const options = await page.locator('#songList .song-list-item').evaluateAll((opts) => opts.map((o) => o.dataset.title));
+console.log('song list after reload:', options);
 
 await page.fill('#songSearch', 'Persisted Song');
 await page.keyboard.press('Enter');

@@ -68,12 +68,13 @@ const pastedTitle = await page.textContent('#songTitle');
 console.log('pasted title:', pastedTitle);
 if (pastedTitle !== 'Pasted Song') throw new Error('paste-load did not work');
 
-// Loading it again should now be possible from the datalist-backed search,
-// without re-pasting -- this is the song library persistence.
+// Loading it again should now be possible from the browsable song list,
+// without re-pasting -- this is the song library persistence. The list
+// shows every available title without needing to type anything.
 await page.click('#railUpload');
-const datalistOptions = await page.locator('#songDatalist option').evaluateAll((opts) => opts.map((o) => o.value));
-console.log('datalist options include pasted song:', datalistOptions.includes('Pasted Song'));
-if (!datalistOptions.includes('Pasted Song')) throw new Error('pasted song should be saved to the library and listed');
+const listedSongs = await page.locator('#songList .song-list-item').evaluateAll((opts) => opts.map((o) => o.dataset.title));
+console.log('song list includes pasted song:', listedSongs.includes('Pasted Song'));
+if (!listedSongs.includes('Pasted Song')) throw new Error('pasted song should be saved to the library and listed');
 
 await browser.close();
 

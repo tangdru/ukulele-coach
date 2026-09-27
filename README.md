@@ -20,7 +20,7 @@ below are the explanations, kept in this README instead of on screen.
 ## What it does
 
 - **Song chart** — paste or upload a [ChordPro](https://www.chordpro.org/chordpro/chordpro-introduction/)-style
-  chord chart, upload a PDF or Word (.docx) lead sheet, or search/pick a
+  chord chart, upload a PDF or Word (.docx) lead sheet, or browse/pick a
   previously loaded song (see Song library below). Chords render above
   the lyrics; tap any chord to see its fingering. Long lines scroll
   horizontally within the chart rather than wrapping (wrapping would
@@ -28,18 +28,30 @@ below are the explanations, kept in this README instead of on screen.
 - **Song library, shared across devices** — every song you paste or
   upload gets saved to a [Supabase](https://supabase.com) table
   (`uke_songs`, see `config.js`) under its title, so next time — on this
-  device or any other — it's just a search-and-select in the Upload sheet
-  instead of uploading or pasting again. The search box is a native
-  `<input list>` / `<datalist>` combo: type to filter, matching both the
-  two bundled demos and everything saved. There's no login, so like the
-  Supabase table this shares its project with (see
-  [tangdru/familytree](https://github.com/tangdru/familytree)'s README
-  for the pattern this follows), **anyone with the site link can see, add,
-  or overwrite songs by title** — fine for chord charts, not a place to
-  put anything sensitive. If `config.js` is left blank or Supabase is
-  unreachable, it falls back to this browser's local storage only (same
-  behavior, just private to this device, and the database attempt is
-  capped at 4 seconds so an unreachable database doesn't stall loading).
+  device or any other — it's already in the Songs panel instead of
+  needing to be uploaded or pasted again. The panel's song list is always
+  visible (not hidden behind typing anything first, which a plain
+  `<input list>`/`<datalist>` and, before this, a focus-triggered custom
+  dropdown both effectively did) and the search box filters it live.
+  There's no login, so like the Supabase table this shares its project
+  with (see [tangdru/familytree](https://github.com/tangdru/familytree)'s
+  README for the pattern this follows), **anyone with the site link can
+  see, add, or overwrite songs by title** — fine for chord charts, not a
+  place to put anything sensitive. If `config.js` is left blank or
+  Supabase is unreachable, it falls back to this browser's local storage
+  only (same behavior, just private to this device, and the database
+  attempt is capped at 4 seconds so an unreachable database doesn't stall
+  loading).
+- **Playlists** — group songs from the library into a named, ordered
+  playlist (also persisted the same way as the song library — Supabase,
+  or local storage if unreachable/unconfigured). Selecting a playlist chip
+  in the Songs panel shows a toggle on every song row to add/remove it;
+  "Play playlist" starts a sequenced practice session that loads the
+  first song and, once it reaches its natural end in whichever play mode
+  is running, automatically advances to the next one in the same mode —
+  a manual Stop ends the session instead of advancing, and Prev/Next/Exit
+  controls (shown above the chart while a session is running) let you
+  skip around it by hand.
 - **PDF/Word lead sheet import** — reconstructs the chord-above-lyric
   layout from the file's text positions (PDF) or paragraph order (Word),
   detects lines that are made up entirely of chord symbols, and merges
@@ -265,7 +277,8 @@ library's database.
 `smoke_test.mjs`, `smoke_test_mic.mjs`, `smoke_test_import.mjs`,
 `smoke_test_tuner.mjs`, `smoke_test_tuner_quiet.mjs`, `smoke_test_tuner_stability.mjs`,
 `smoke_test_tuner_layout.mjs`, `smoke_test_tuner_flatsharp.mjs`, `smoke_test_follow.mjs`,
-`smoke_test_scoring.mjs`, `smoke_test_library.mjs`, `smoke_test_history.mjs`,
+`smoke_test_scoring.mjs`, `smoke_test_library.mjs`, `smoke_test_song_library.mjs`,
+`smoke_test_history.mjs`,
 `smoke_test_playhead.mjs`, `smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`,
 `smoke_test_backing.mjs`, `smoke_test_zoom.mjs`, `smoke_test_loop.mjs`,
 `smoke_test_progress.mjs`, and `smoke_test_instruments.mjs` are Playwright scripts (not part of the
@@ -284,7 +297,13 @@ during Analyze Me and asserts real timing hits reach the DOM as rated-*
 marks on the correct line and chord, that they survive Stop, and that a
 new song load clears them; `smoke_test_library.mjs` pastes a song, does a
 real full page reload (not just in-page navigation), and asserts the
-song is still there in the search list and loadable by name;
+song is still there in the browsable list and loadable by name;
+`smoke_test_song_library.mjs` checks the Songs panel itself: the song list
+is populated on open with no typing required, filters live, shows a
+no-match state, and Enter/click both load a song; and playlists —
+create/rename/delete, the add/remove toggle on each song row, and a
+"Play playlist" session that auto-advances to the next song on a natural
+end (but not a manual Stop) with working Prev/Next/Exit controls;
 `smoke_test_history.mjs` runs a sloppy-timing Analyze Me session, stops
 it, and asserts a graded entry with the specific off/missed lines shows
 up in the History view, survives a real reload, and a second run adds a
@@ -325,6 +344,7 @@ node smoke_test_tuner.mjs
 node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
 node smoke_test_library.mjs
+node smoke_test_song_library.mjs
 node smoke_test_history.mjs
 node smoke_test_playhead.mjs
 node smoke_test_hscroll.mjs

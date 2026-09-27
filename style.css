@@ -209,6 +209,17 @@ button {
      was measured directly against the real rendered content instead. */
   min-height: 34px;
 }
+.queue-status { flex-wrap: wrap; }
+.queue-nav-btn {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  margin-left: 4px;
+}
+.queue-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
 .rhythm-stats { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .stat { text-align: center; }
 .stat-value { display: block; font-size: 1rem; font-weight: 700; color: var(--accent); }
@@ -560,6 +571,94 @@ button {
   padding: 8px 10px;
   font-size: 0.9rem;
 }
+
+/* Playlist chips: "All Songs" plus one per user playlist, the row the
+   song list below is filtered by. Horizontally scrolling rather than
+   wrapping keeps the panel's height predictable with any number of
+   playlists. */
+.playlist-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.playlist-chip {
+  flex: 0 0 auto;
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.playlist-chip.active { background: var(--accent-strong); border-color: var(--accent-strong); color: #062018; font-weight: 600; }
+.playlist-chip-new { border-style: dashed; }
+.playlist-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  padding: 4px 2px;
+  text-decoration: underline;
+}
+.text-btn:hover { color: var(--accent); }
+
+/* The song list itself -- always visible and filtered live by the search
+   box and/or the active playlist chip, so browsing what's available
+   doesn't require typing anything first. Sits in normal document flow
+   (not an absolutely-positioned overlay), so it pushes the rest of the
+   panel down rather than covering it -- an overlay here would sit on top
+   of the "add a new song" controls below it, silently swallowing taps
+   meant for them. */
+.song-list {
+  margin: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+.song-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.song-list-item:hover { background: rgba(127, 216, 190, 0.12); }
+.song-list-item-title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song-list-item-toggle {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.song-list-item-toggle.in-playlist { background: var(--accent-strong); border-color: var(--accent-strong); color: #062018; }
+.song-list-empty {
+  padding: 8px 10px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
 .upload-row {
   display: flex;
   flex-wrap: wrap;
