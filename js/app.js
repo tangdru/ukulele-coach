@@ -47,7 +47,10 @@
     if (el._hideTimer) clearTimeout(el._hideTimer);
     el._hideTimer = setTimeout(() => el.classList.add('hidden'), durationMs);
   }
-  const showMicError = showError;
+  // Mic errors get much longer on screen than other errors -- a 6s banner
+  // is easy to miss entirely on a phone, especially if you're looking at
+  // the permission prompt instead of the page right when it appears.
+  const showMicError = (msg) => showError(msg, 20000);
 
   async function ensureMic() {
     if (micStream) return true;
@@ -66,8 +69,18 @@
       // detection looks for) or, worse, let AGC-boosted room noise drift
       // into false onsets. Every feature here (Tuner, Key detection,
       // Follow Me, Analyze Me) wants the raw signal instead.
+      // `ideal`, not a bare `false` -- a bare boolean is a *mandatory*
+      // constraint, and if a device can't satisfy it exactly (some iOS
+      // Safari/hardware combinations can't disable these), getUserMedia
+      // throws OverconstrainedError before ever reaching the mic, which
+      // looks identical to "the mic just isn't picking anything up."
+      // `ideal` asks for the same thing but degrades gracefully instead.
       micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        audio: {
+          echoCancellation: { ideal: false },
+          noiseSuppression: { ideal: false },
+          autoGainControl: { ideal: false },
+        },
       });
       micSource = audioCtx.createMediaStreamSource(micStream);
       analyser = audioCtx.createAnalyser();
@@ -855,11 +868,36 @@
 
   // ---------- Tuner ----------
 
+  // A live readout of what's actually reaching the analyser -- audioCtx
+  // state, the mic track's own state, and its raw signal level -- so a
+  // report of "the tuner isn't picking anything up" can be diagnosed from
+  // what this line says instead of guessing blind at which stage failed
+  // (permission never granted, context still suspended, a live but silent
+  // track, or a real signal that just isn't being read as a clean pitch).
+  let tunerDebugRafId = null;
+  let tunerDebugBuf = null;
+  function tunerDebugLoop() {
+    if (!tunerRunning) return;
+    if (analyser && !tunerDebugBuf) tunerDebugBuf = new Float32Array(analyser.fftSize);
+    let rms = 0;
+    if (analyser && tunerDebugBuf) {
+      analyser.getFloatTimeDomainData(tunerDebugBuf);
+      for (let i = 0; i < tunerDebugBuf.length; i++) rms += tunerDebugBuf[i] * tunerDebugBuf[i];
+      rms = Math.sqrt(rms / tunerDebugBuf.length);
+    }
+    const track = micStream && micStream.getAudioTracks()[0];
+    $('tunerDebug').textContent =
+      `audio: ${audioCtx ? audioCtx.state : 'none'} | mic track: ${track ? `${track.readyState}${track.muted ? ' (muted)' : ''}` : 'none'} | level: ${rms.toFixed(4)}`;
+    tunerDebugRafId = requestAnimationFrame(tunerDebugLoop);
+  }
+
   let tunerRunning = false;
   $('tunerToggleBtn').addEventListener('click', async () => {
     if (tunerRunning) {
       tuner.stop();
       tunerRunning = false;
+      if (tunerDebugRafId) cancelAnimationFrame(tunerDebugRafId);
+      $('tunerDebug').classList.add('hidden');
       $('tunerToggleLabel').textContent = 'Start Tuner';
       return;
     }
@@ -889,6 +927,8 @@
     tuner.start();
     tunerRunning = true;
     $('tunerToggleLabel').textContent = 'Stop Tuner';
+    $('tunerDebug').classList.remove('hidden');
+    tunerDebugLoop();
   });
 
   // ---------- Key detection ----------

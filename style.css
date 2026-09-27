@@ -195,6 +195,12 @@ button {
   font-weight: 600;
   margin-bottom: 6px;
 }
+.tuner-debug {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
 .rhythm-stats { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .stat { text-align: center; }
 .stat-value { display: block; font-size: 1rem; font-weight: 700; color: var(--accent); }
