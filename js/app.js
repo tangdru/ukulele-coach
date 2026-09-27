@@ -53,6 +53,13 @@
     if (micStream) return true;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      // iOS Safari can leave a freshly-created (or backgrounded-and-returned-to)
+      // AudioContext in a "suspended" state even after mic permission is
+      // granted -- the analyser then silently processes silence forever,
+      // with no error, just a tuner/pitch-detection reading that never
+      // updates. Resuming must happen inside a user-gesture handler (this
+      // one, from the button tap), so it can't be deferred to later.
+      await audioCtx.resume();
       // Browser defaults enable echo cancellation, noise suppression, and
       // auto-gain control -- all tuned for voice calls, and all liable to
       // dampen a strum's sharp transient (the very thing onset/pitch
@@ -76,6 +83,7 @@
 
   function ensureMetronome() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume(); // see ensureMic's comment on iOS Safari
     if (!metronome) metronome = new Metronome(audioCtx);
     return metronome;
   }
