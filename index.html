@@ -117,7 +117,7 @@
     <main class="main-view">
 
       <section id="view-play" class="view">
-        <div class="play-modes">
+        <div id="playModesRow" class="play-modes">
           <button id="modeMetronomeBtn" class="mode-btn" type="button" title="Metronome: listen and play along"><svg class="icon" aria-hidden="true"><use href="#icon-play" /></svg> Learn</button>
           <button id="modeAnalyzeBtn" class="mode-btn" type="button" title="Analyze Me: practice with timing feedback"><svg class="icon" aria-hidden="true"><use href="#icon-target" /></svg> Practice</button>
           <button id="modeFollowBtn" class="mode-btn" type="button" title="Follow Me: play at your own pace"><svg class="icon" aria-hidden="true"><use href="#icon-mic" /></svg> Perform</button>
@@ -128,6 +128,7 @@
             Auto-scroll
           </label>
         </div>
+        <p id="notatedNote" class="status-line hidden">Real sheet music from a MusicXML file &mdash; practice modes and chord-tap diagrams aren't wired up for this yet, this is a read-only view.</p>
         <p id="queueStatus" class="status-line queue-status hidden">
           <svg class="icon" aria-hidden="true"><use href="#icon-music" /></svg>
           <span id="queueStatusText"></span>
@@ -149,6 +150,7 @@
           <div id="songView" class="song-view">
             <p class="empty-hint">Tap <svg class="icon" aria-hidden="true"><use href="#icon-list" /></svg> to load a song.</p>
           </div>
+          <div id="staffView" class="staff-view hidden"></div>
           <div id="chartZoom" class="chart-zoom">
             <button id="zoomOutBtn" class="zoom-btn" type="button" title="Zoom out">&minus;</button>
             <button id="fitScreenBtn" class="zoom-btn" type="button" title="Fit to screen"><svg class="icon" aria-hidden="true"><use href="#icon-fit" /></svg></button>
@@ -208,8 +210,8 @@
       <ul id="songList" class="song-list" role="listbox"></ul>
 
       <div class="upload-row">
-        <label for="chordproFile" class="file-label secondary-btn">Upload file (.cho/.txt/.pdf/.docx/.html)</label>
-        <input type="file" id="chordproFile" accept=".cho,.chopro,.pro,.txt,.pdf,.docx,.doc,.html" class="hidden" />
+        <label for="chordproFile" class="file-label secondary-btn">Upload file (.cho/.txt/.pdf/.docx/.html/.musicxml/.mxl)</label>
+        <input type="file" id="chordproFile" accept=".cho,.chopro,.pro,.txt,.pdf,.docx,.doc,.html,.musicxml,.xml,.mxl" class="hidden" />
         <button id="togglePasteBtn" class="secondary-btn" type="button">Paste chords instead</button>
       </div>
       <div id="importStatus" class="import-status hidden"></div>
@@ -233,6 +235,7 @@
 <script src="vendor/supabase.js"></script>
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/mammoth.browser.min.js"></script>
+<script src="vendor/opensheetmusicdisplay.min.js"></script>
 <script src="js/pitch.js"></script>
 <script src="js/chordpro.js"></script>
 <script src="js/chord-theory.js"></script>

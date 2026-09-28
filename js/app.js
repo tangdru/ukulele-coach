@@ -112,7 +112,10 @@
     renderSongList();
   }
 
-  function loadSong(chordproText, fromQueue) {
+  // knownTitle: the title to use for a *notated* (MusicXML) song, which has
+  // no {title:} directive of its own to parse out -- see loadNotatedSong.
+  // Ignored for an ordinary ChordPro song, which derives its own title.
+  function loadSong(chordproText, fromQueue, knownTitle) {
     // Finalize/save any in-progress Analyze Me session against the *old*
     // song before its chart lines are replaced -- stopScroll() (called
     // here) is what records session history, and it needs the outgoing
@@ -120,6 +123,12 @@
     stopScroll();
     stopFollow();
     clearLoop(); // line indices are song-specific, a leftover loop range wouldn't mean anything on a new chart
+
+    if (isNotatedSongText(chordproText)) {
+      loadNotatedSong(chordproText, knownTitle, fromQueue);
+      return;
+    }
+    setNotatedMode(false);
 
     const song = parseChordPro(chordproText);
     currentSong = song;
@@ -144,6 +153,92 @@
     if (!fromQueue && activeQueue) {
       activeQueue = null;
       updateQueueStatus();
+    }
+  }
+
+  // ---------- Real sheet music (MusicXML/.mxl, via OpenSheetMusicDisplay) ----------
+  // A fundamentally different kind of "song" from everything else here --
+  // ChordPro only ever encodes chord names and lyrics, never melody notes,
+  // so there's no way to get real staff notation out of a pasted/PDF/Word
+  // chord chart. This is the one import path that has actual note/rhythm
+  // data (from a MusicXML file), rendered as-authored instead of parsed
+  // into the chord-over-lyric chart. Stored in the same song library as
+  // everything else (so it's browsable/playlist-able like any other song),
+  // tagged with a prefix so loadSong can tell the two apart -- uncompressed
+  // MusicXML is plain text and stored as-is, compressed .mxl is binary and
+  // stored base64-encoded.
+  const MUSICXML_TEXT_PREFIX = 'MUSICXML:';
+  const MUSICXML_B64_PREFIX = 'MUSICXML-B64:';
+  let osmd = null;
+
+  function isNotatedSongText(text) {
+    return text.startsWith(MUSICXML_TEXT_PREFIX) || text.startsWith(MUSICXML_B64_PREFIX);
+  }
+
+  function deriveTitleFromFilename(filename) {
+    const stripped = filename.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+    return stripped || 'Untitled sheet music';
+  }
+
+  function arrayBufferToBase64(buf) {
+    let binary = '';
+    const bytes = new Uint8Array(buf);
+    const CHUNK = 0x8000; // String.fromCharCode.apply chokes on very large argument lists
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    }
+    return btoa(binary);
+  }
+
+  function base64ToArrayBuffer(b64) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  // Practice modes, the loop, chord-tap diagrams, and chart zoom are all
+  // built around the ChordPro chart's flatLines/chord-symbol DOM, none of
+  // which exists for a MusicXML render -- rather than half-wire those to a
+  // completely different rendering engine, a notated song is read-only:
+  // shown full-screen with a note explaining why the controls are gone.
+  function setNotatedMode(isNotated) {
+    $('staffView').classList.toggle('hidden', !isNotated);
+    $('songView').classList.toggle('hidden', isNotated);
+    $('chartZoom').classList.toggle('hidden', isNotated);
+    $('playModesRow').classList.toggle('hidden', isNotated);
+    $('notatedNote').classList.toggle('hidden', !isNotated);
+  }
+
+  async function loadNotatedSong(prefixedText, knownTitle, fromQueue) {
+    const title = knownTitle || 'Untitled sheet music';
+    currentSong = { title, notated: true };
+    flatLines = [];
+    $('songTitle').textContent = title;
+    $('songTitle').title = title;
+    $('keyDisplay').textContent = '—';
+    $('timeSigDisplay').textContent = '—';
+    clearTimingMarks();
+    setNotatedMode(true);
+    closeUploadPanel();
+
+    if (!fromQueue && activeQueue) {
+      activeQueue = null;
+      updateQueueStatus();
+    }
+
+    saveSongToLibrary(title, prefixedText);
+    refreshSongTitles();
+
+    try {
+      const content = prefixedText.startsWith(MUSICXML_B64_PREFIX)
+        ? base64ToArrayBuffer(prefixedText.slice(MUSICXML_B64_PREFIX.length))
+        : prefixedText.slice(MUSICXML_TEXT_PREFIX.length);
+      osmd = osmd || new opensheetmusicdisplay.OpenSheetMusicDisplay($('staffView'), { autoResize: true, backend: 'svg', drawTitle: true });
+      await osmd.load(content);
+      osmd.render();
+    } catch (err) {
+      showError(`Couldn't render sheet music for "${title}": ${err.message || err}`, 9000);
     }
   }
 
@@ -998,7 +1093,7 @@
   function loadByTitle(title, fromQueue) {
     const songs = allAvailableSongs();
     if (songs[title]) {
-      loadSong(songs[title], fromQueue);
+      loadSong(songs[title], fromQueue, title);
       return true;
     }
     return false;
@@ -1269,6 +1364,33 @@
       } catch (err) {
         setImportStatus('');
         showError(`Couldn't convert ${file.name}: ${err.message || err}`, 9000);
+      }
+      e.target.value = '';
+      return;
+    }
+
+    // MusicXML has real note/rhythm data, loaded as-authored (see
+    // loadNotatedSong) rather than run through the lossy chord-chart
+    // reconstruction PDF/Word get -- so unlike those, there's no
+    // review-before-load step here.
+    if (name.endsWith('.musicxml') || name.endsWith('.xml')) {
+      try {
+        const text = await file.text();
+        const titleMatch = text.match(/<movement-title>([^<]*)<\/movement-title>/) || text.match(/<work-title>([^<]*)<\/work-title>/);
+        const title = (titleMatch && titleMatch[1].trim()) || deriveTitleFromFilename(file.name);
+        loadSong(MUSICXML_TEXT_PREFIX + text, false, title);
+      } catch (err) {
+        showError(`Couldn't read ${file.name}: ${err.message || err}`, 9000);
+      }
+      e.target.value = '';
+      return;
+    }
+    if (name.endsWith('.mxl')) {
+      try {
+        const buf = await file.arrayBuffer();
+        loadSong(MUSICXML_B64_PREFIX + arrayBufferToBase64(buf), false, deriveTitleFromFilename(file.name));
+      } catch (err) {
+        showError(`Couldn't read ${file.name}: ${err.message || err}`, 9000);
       }
       e.target.value = '';
       return;

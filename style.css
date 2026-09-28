@@ -245,6 +245,21 @@ button {
      same corner, so it never sits on top of the first line's chords. */
   padding: 44px 12px 12px;
 }
+/* Real staff notation (OpenSheetMusicDisplay), for songs imported from a
+   MusicXML/.mxl file -- rendered on its own white card since printed
+   notation is conventionally black ink on white/cream paper, unlike the
+   rest of this dark-themed app; forcing it into the dark palette would
+   fight OSMD's own default note/staff-line colors. */
+.staff-view {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 12px;
+}
 .chart-zoom {
   position: absolute;
   top: 8px;

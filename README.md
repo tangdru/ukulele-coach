@@ -74,6 +74,21 @@ below are the explanations, kept in this README instead of on screen.
   example chart, but an exotic real-world export could still convert
   imperfectly. Only the first song converts out of a multi-song playlist
   link.
+- **Real sheet music (MusicXML/.mxl import)** — upload a `.musicxml`/`.xml`
+  (plain XML) or `.mxl` (compressed) file and it renders as actual staff
+  notation via [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/)
+  (BSD-3-Clause), instead of going through the chord-chart reconstruction
+  PDF/Word import uses. This is a genuinely different kind of song: a
+  ChordPro chart only ever has chord names and lyrics, never melody
+  notes, so there's nothing to draw noteheads from for anything pasted,
+  PDF/Word-imported, or from iReal Pro — real notation only exists for a
+  song you can get an actual MusicXML file for (e.g. exported from
+  MuseScore, Finale, or Sibelius). It's saved to the song library and
+  playlist-able like any other song, but is a **read-only view**: the
+  practice modes (Learn/Practice/Perform), Loop, chart zoom, and
+  chord-tap fingering diagrams are all built around the chord chart's own
+  DOM and aren't wired up to staff notation, so they're hidden while one
+  is showing.
 - **Zoom / fit to screen** — a small floating control in the corner of the
   chart lets you shrink or enlarge the text (`−`/`+`), or tap the fit icon
   to auto-shrink until the widest line on screen no longer needs
@@ -264,11 +279,13 @@ python3 -m http.server 8000
 
 ## Built with
 
-Plain HTML/JS/CSS, no build step. `vendor/` has three locally-hosted
+Plain HTML/JS/CSS, no build step. `vendor/` has four locally-hosted
 libraries (not loaded from a CDN, so the app doesn't depend on one being
 reachable): [pdf.js](https://mozilla.github.io/pdf.js/) (Apache-2.0) for
 reading PDF text, [mammoth.js](https://github.com/mwilliamson/mammoth.js)
-(BSD-2-Clause) for reading .docx text, and
+(BSD-2-Clause) for reading .docx text,
+[OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) (BSD-3-Clause)
+for rendering real staff notation from MusicXML/.mxl files, and
 [supabase-js](https://github.com/supabase/supabase-js) (MIT) for the song
 library's database.
 
@@ -278,13 +295,15 @@ library's database.
 `smoke_test_tuner.mjs`, `smoke_test_tuner_quiet.mjs`, `smoke_test_tuner_stability.mjs`,
 `smoke_test_tuner_layout.mjs`, `smoke_test_tuner_flatsharp.mjs`, `smoke_test_follow.mjs`,
 `smoke_test_scoring.mjs`, `smoke_test_library.mjs`, `smoke_test_song_library.mjs`,
+`smoke_test_musicxml.mjs`,
 `smoke_test_history.mjs`,
 `smoke_test_playhead.mjs`, `smoke_test_hscroll.mjs`, `smoke_test_ireal.mjs`,
 `smoke_test_backing.mjs`, `smoke_test_zoom.mjs`, `smoke_test_loop.mjs`,
 `smoke_test_progress.mjs`, and `smoke_test_instruments.mjs` are Playwright scripts (not part of the
 served app) that load the page in headless Chromium and click through
 song loading, the rail/upload-sheet navigation, chord diagrams, all three
-play modes, and PDF/Word lead sheet import. Several go a step further
+play modes, PDF/Word lead sheet import, and MusicXML/.mxl staff notation
+import. Several go a step further
 than "does it start without errors", by checking the actual *behavior*:
 `smoke_test_tuner.mjs` (via `gen_test_tone.mjs`, a small dependency-free
 WAV writer) feeds a real synthesized tone through Chromium's fake audio
@@ -304,6 +323,12 @@ no-match state, and Enter/click both load a song; and playlists —
 create/rename/delete, the add/remove toggle on each song row, and a
 "Play playlist" session that auto-advances to the next song on a natural
 end (but not a manual Stop) with working Prev/Next/Exit controls;
+`smoke_test_musicxml.mjs` uploads both an uncompressed `.musicxml` and a
+compressed `.mxl` fixture and asserts real staff notation actually
+renders (not the chord chart), that the practice-mode controls are
+hidden while it's showing, that both stay browsable/reloadable from the
+song library like any other song, and that switching back to an
+ordinary chord chart restores the normal chart/practice UI;
 `smoke_test_history.mjs` runs a sloppy-timing Analyze Me session, stops
 it, and asserts a graded entry with the specific off/missed lines shows
 up in the History view, survives a real reload, and a second run adds a
@@ -345,6 +370,7 @@ node smoke_test_follow.mjs
 node smoke_test_scoring.mjs
 node smoke_test_library.mjs
 node smoke_test_song_library.mjs
+node smoke_test_musicxml.mjs   # uses the committed sample_sheet.musicxml/.mxl fixtures
 node smoke_test_history.mjs
 node smoke_test_playhead.mjs
 node smoke_test_hscroll.mjs
