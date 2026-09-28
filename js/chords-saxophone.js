@@ -1,33 +1,36 @@
 // Saxophone is monophonic -- a chord isn't one shape to hold the way it is
 // on ukulele/piano, it's several individual notes to read or improvise
 // from. So the "diagram" here is a row of small fingering diagrams, one
-// per chord tone, each labeled with its written note (transposed for the
-// player's actual horn) and role (root/3rd/5th/...). The backing track
-// only ever sounds the root -- the one note a saxophonist could actually
-// hold against the harmony.
+// per chord tone, each labeled with its note name and role (root/3rd/5th/
+// ...).
+//
+// Selecting Saxophone re-labels the chart's own chord symbols (see
+// displaySymbol/app.js's displayChordSym) to what a real alto (Eb) horn
+// actually reads -- a major sixth above concert pitch -- so the chart and
+// the fingering diagram always agree: tapping whatever's printed on the
+// chart looks that exact note up directly, no separate transposition step
+// of its own. (An earlier version left the chart in concert pitch and
+// transposed only inside this diagram, so tapping the printed "F" showed
+// a big "D" with no visible connection between the two -- confusing, and
+// not what was asked for: the whole point is to read the transposed note
+// straight off the chart while playing, then learn its fingering.)
 //
 // Fingerings below are transcribed from the Standard of Excellence Eb
 // alto saxophone fingering chart (the primary/first-listed fingering for
 // each note only, no alternates), covering one full chromatic octave with
-// no register/octave key needed (written Bb3 up to A4) -- deliberately
-// the one range simple enough to transcribe with real confidence from a
-// reference image, the same way the ukulele/piano diagrams each show one
-// representative octave rather than a specific performance passage. A
-// chord tone's pitch class maps directly onto this table regardless of
-// which octave it'd actually be played in.
-
-// Alto (Eb) saxophone sounds a major sixth below what's written, so to
-// get the note a player should read/finger from a concert (sounding)
-// pitch class, shift it up a major sixth (9 semitones).
-const SAX_TRANSPOSE = { alto: 9 };
-let saxInstrumentKey = 'alto'; // only alto is supported for now
+// no register/octave key needed -- deliberately the one range simple
+// enough to transcribe with real confidence from a reference image, the
+// same way the ukulele/piano diagrams each show one representative octave
+// rather than a specific performance passage. A chord tone's pitch class
+// maps directly onto this table regardless of which octave it'd actually
+// be played in.
 
 // Main left-hand (LH1-3) and right-hand (RH1-3) keys pressed for each
-// written pitch class, plus any low-register pinky key or the dedicated
-// G# key ("extra"). D4 (no extra key) and A4 (LH1 alone) anchor the
-// table -- both are the simplest, least ambiguous fingerings on the horn
-// and match the reference chart exactly, which is why this octave
-// (Bb3-A4) was chosen over any other.
+// pitch class, plus any low-register pinky key or the dedicated G# key
+// ("extra"). D (no extra key) and A (LH1 alone) anchor the table -- both
+// are the simplest, least ambiguous fingerings on the horn and match the
+// reference chart exactly, which is why this octave was chosen over any
+// other.
 const SAX_FINGERINGS = {
   0: { keys: ['LH1', 'LH2', 'LH3', 'RH1', 'RH2', 'RH3'], extra: ['low C'] }, // C
   1: { keys: ['LH1', 'LH2', 'LH3', 'RH1', 'RH2', 'RH3'], extra: ['low C#'] }, // C#/Db
@@ -44,18 +47,19 @@ const SAX_FINGERINGS = {
 };
 const SAX_ALL_KEYS = ['LH1', 'LH2', 'LH3', 'RH1', 'RH2', 'RH3'];
 
-function saxChordSpelling(sym) {
-  const chord = chordTones(sym);
-  if (!chord) return null;
-  const transpose = SAX_TRANSPOSE[saxInstrumentKey] || 0;
-  return {
-    ...chord,
-    tones: chord.tones.map((t) => ({ ...t, writtenPc: (t.pc + transpose) % 12 })),
-  };
+// Alto (Eb) sounds a major sixth below what's written, so the note a
+// player should read/finger for a given concert pitch is a major sixth
+// (9 semitones) above it.
+const SAX_ALTO_TRANSPOSE = 9;
+
+function saxDisplaySymbol(sym) {
+  return transposeSymbol(sym, SAX_ALTO_TRANSPOSE);
 }
 
-// The backing track's one playable note: the root, at concert pitch (the
-// actual sound, regardless of what a sax player would read/finger for it).
+// The backing track's one playable note: the root, at concert pitch --
+// chordSymbolAt() always hands this the chart's underlying (untransposed)
+// symbol regardless of what's currently displayed, so this never needs to
+// un-transpose anything itself.
 function saxChordFrequencies(sym) {
   const chord = chordTones(sym);
   if (!chord) return null;
@@ -71,11 +75,11 @@ function renderSaxFingeringDot(svg, svgNS, cx, cy, pressed) {
   svg.appendChild(circle);
 }
 
-function renderSaxTone(writtenPc) {
+function renderSaxTone(pc) {
   const wrap = document.createElement('div');
   wrap.className = 'sax-tone';
 
-  const fingering = SAX_FINGERINGS[writtenPc];
+  const fingering = SAX_FINGERINGS[pc];
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('viewBox', '0 0 30 96');
@@ -98,7 +102,7 @@ function renderSaxTone(writtenPc) {
 }
 
 function renderSaxChordDiagram(container, sym) {
-  const chord = saxChordSpelling(sym);
+  const chord = chordTones(sym);
   container.innerHTML = '';
   const title = document.createElement('div');
   title.className = 'chord-diagram-title';
@@ -113,33 +117,23 @@ function renderSaxChordDiagram(container, sym) {
     return;
   }
 
-  const subtitle = document.createElement('div');
-  subtitle.className = 'sax-diagram-subtitle';
-  subtitle.textContent = 'Alto (Eb) — written pitch';
-  container.appendChild(subtitle);
-
   const row = document.createElement('div');
   row.className = 'sax-chord-tones';
   chord.tones.forEach((t) => {
     const card = document.createElement('div');
     card.className = 'sax-chord-tone' + (t.pc === chord.rootPc ? ' sax-chord-tone-root' : '');
 
-    const written = document.createElement('div');
-    written.className = 'sax-chord-tone-written';
-    written.textContent = pcName(t.writtenPc, chord.flatPreferred);
-    card.appendChild(written);
+    const note = document.createElement('div');
+    note.className = 'sax-chord-tone-note';
+    note.textContent = pcName(t.pc, chord.flatPreferred);
+    card.appendChild(note);
 
-    card.appendChild(renderSaxTone(t.writtenPc));
+    card.appendChild(renderSaxTone(t.pc));
 
     const role = document.createElement('div');
     role.className = 'sax-chord-tone-role';
     role.textContent = t.role;
     card.appendChild(role);
-
-    const sounds = document.createElement('div');
-    sounds.className = 'sax-chord-tone-sounds';
-    sounds.textContent = `sounds ${pcName(t.pc, chord.flatPreferred)}`;
-    card.appendChild(sounds);
 
     row.appendChild(card);
   });
@@ -149,4 +143,5 @@ function renderSaxChordDiagram(container, sym) {
 window.ChordsSaxophone = {
   renderChordDiagram: renderSaxChordDiagram,
   chordFrequencies: saxChordFrequencies,
+  displaySymbol: saxDisplaySymbol,
 };

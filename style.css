@@ -63,20 +63,23 @@ button {
   height: 100%;
 }
 
-/* Compact top bar */
+/* Compact top bar -- the song title is the one thing worth reading at a
+   glance, so every other control (key/tempo/time-sig/instrument) is kept
+   as small as it can be while staying legible/tappable, and the title
+   gets whatever width that leaves rather than an equal flex share. */
 .topbar {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--panel-border);
   overflow-x: auto;
   white-space: nowrap;
 }
 .song-title {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -85,10 +88,16 @@ button {
 }
 .meta-chip {
   color: var(--accent);
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.72rem;
   flex: 0 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 3px 5px;
+  line-height: 1.3;
 }
+.meta-chip-dim { color: var(--text-dim); }
 /* Shared outline-icon sizing: every icon is an <svg><use></svg> against
    the sprite sheet at the top of the page, colored via currentColor so it
    always matches its button's text/accent state automatically. */
@@ -109,7 +118,7 @@ button {
   border: none;
   color: var(--text-dim);
   font-size: 1rem;
-  padding: 4px 6px;
+  padding: 3px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -118,23 +127,34 @@ button {
 .icon-btn:hover { color: var(--accent); }
 .key-progress { font-size: 0.7rem; }
 .instrument-select {
-  background: var(--bg);
+  background: var(--panel);
   color: var(--text);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 0.85rem;
+  padding: 3px 1px;
+  font-size: 0.7rem;
   flex: 0 0 auto;
+  width: 40px;
 }
 .tempo-chip {
-  width: 52px;
-  background: var(--bg);
+  width: 30px;
+  background: var(--panel);
   color: var(--text);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 0.85rem;
+  padding: 3px 2px;
+  font-size: 0.72rem;
+  text-align: center;
   flex: 0 0 auto;
+  /* At this width a desktop browser's native up/down spinner would eat
+     most of the box -- mobile Safari (this app's main target) never shows
+     one anyway, so suppressing it costs nothing there. */
+  -moz-appearance: textfield;
+}
+.tempo-chip::-webkit-outer-spin-button,
+.tempo-chip::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* Main content: whichever view is active fills all remaining height */
@@ -414,8 +434,8 @@ button {
 /* Saxophone chord "diagram": a monophonic instrument can't voice a full
    chord at once, so this is a row of small per-note fingering diagrams
    (one per chord tone) instead of one shape to hold -- each labeled with
-   its written note (transposed for the player's horn) and role. */
-.sax-diagram-subtitle { color: var(--text-dim); font-size: 0.72rem; margin-bottom: 8px; }
+   its note name and role, fingering looked up directly for that same note
+   (no transposition -- see the comment in chords-saxophone.js). */
 .sax-chord-tones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .sax-chord-tone {
   display: flex;
@@ -429,9 +449,8 @@ button {
   min-width: 44px;
 }
 .sax-chord-tone-root { border-top-color: var(--accent-strong); }
-.sax-chord-tone-written { font-weight: 700; font-size: 1rem; }
+.sax-chord-tone-note { font-weight: 700; font-size: 1rem; }
 .sax-chord-tone-role { color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.sax-chord-tone-sounds { color: var(--text-dim); font-size: 0.68rem; }
 
 .sax-tone-svg { width: 26px; height: 84px; }
 .sax-key-dot { stroke: var(--text-dim); stroke-width: 1; }
@@ -652,6 +671,22 @@ button {
 }
 .song-list-item:hover { background: rgba(127, 216, 190, 0.12); }
 .song-list-item-title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Which kind of song this is -- a regular chord chart (chords over
+   lyrics, every practice mode works) or real staff notation imported from
+   MusicXML (read-only, see setNotatedMode in app.js). Notation gets the
+   accent color since it's the one that behaves differently when tapped. */
+.song-list-item-type {
+  flex: 0 0 auto;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--text-dim);
+  border: 1px solid var(--panel-border);
+}
+.song-list-item-type-notation { color: var(--accent); border-color: var(--accent); }
 .song-list-item-toggle {
   flex: 0 0 auto;
   width: 26px;

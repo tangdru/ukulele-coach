@@ -84,11 +84,13 @@ below are the explanations, kept in this README instead of on screen.
   PDF/Word-imported, or from iReal Pro — real notation only exists for a
   song you can get an actual MusicXML file for (e.g. exported from
   MuseScore, Finale, or Sibelius). It's saved to the song library and
-  playlist-able like any other song, but is a **read-only view**: the
-  practice modes (Learn/Practice/Perform), Loop, chart zoom, and
-  chord-tap fingering diagrams are all built around the chord chart's own
-  DOM and aren't wired up to staff notation, so they're hidden while one
-  is showing.
+  playlist-able like any other song — badged "Notation" in the Songs
+  panel's list (an ordinary chord chart is badged "Chords"), so it's
+  obvious at a glance which songs behave which way before tapping one —
+  but is a **read-only view**: the practice modes (Learn/Practice/
+  Perform), Loop, chart zoom, and chord-tap fingering diagrams are all
+  built around the chord chart's own DOM and aren't wired up to staff
+  notation, so they're hidden while one is showing.
 - **Zoom / fit to screen** — a small floating control in the corner of the
   chart lets you shrink or enlarge the text (`−`/`+`), or tap the fit icon
   to auto-shrink until the widest line on screen no longer needs
@@ -101,9 +103,13 @@ below are the explanations, kept in this README instead of on screen.
   Resets to the default size whenever a new song loads.
 - **Instrument selector (top bar)** — Ukulele, Piano, or Saxophone. Every
   chord symbol is parsed once into a root + interval set
-  (`js/chord-theory.js`), shared by all three instrument modules, so
-  switching instruments never changes what a chord *means* — only how it's
-  shown and how the Learn-mode backing track sounds it:
+  (`js/chord-theory.js`), shared by all three instrument modules, so the
+  song's actual key never changes underneath the choice — the Learn-mode
+  backing track always plays the concert pitch the chart was written in
+  (`chordSymbolAt()` reads each chord's underlying symbol via a `data-sym`
+  attribute, independent of whatever's currently *displayed*). What does
+  change per instrument is how a chord is shown, and — for Saxophone only
+  — the chord symbols printed on the chart itself:
   - **Ukulele** — fingerings are *computed*, not hand-typed: the app
     searches fret positions on the baritone's D/G/B/E strings for a valid
     voicing containing the chord's root, third (or sus tone), and — for
@@ -115,13 +121,18 @@ below are the explanations, kept in this README instead of on screen.
     already laid out by pitch, unlike a fretboard.
   - **Saxophone** — a saxophone can only play one note at a time, so
     instead of one diagram it shows a small fingering diagram *per chord
-    tone*, each labeled with its written note (transposed to alto/Eb —
-    e.g. concert C is shown as the alto's written A) and role
-    (root/3rd/5th/…). Fingerings (`js/chords-saxophone.js`) are
-    transcribed from the Standard of Excellence Eb alto fingering chart,
-    covering one full chromatic octave (written Bb3–A4) with no
-    register/octave key needed — the primary/first-listed fingering only,
-    no alternates.
+    tone*, each labeled with its note name and role (root/3rd/5th/…).
+    Selecting Saxophone also re-labels every chord symbol on the chart
+    itself to what a real alto (Eb) horn actually reads — a major sixth
+    above concert pitch (e.g. a chart's "C" prints as "A") — so the chart
+    is what to read and finger while playing, not just the tap-to-see
+    diagram; tapping a chord then looks up that exact printed note's
+    fingering directly, no further transposition. Switching back to
+    Ukulele/Piano restores the chart's original symbols. Fingerings
+    (`js/chords-saxophone.js`) are transcribed from the Standard of
+    Excellence Eb alto fingering chart, covering one full chromatic octave
+    with no register/octave key needed — the primary/first-listed
+    fingering only, no alternates.
 
   The choice persists (`localStorage`) and also changes what Learn mode's
   backing track plays: ukulele's/piano's full voicing, or just the root

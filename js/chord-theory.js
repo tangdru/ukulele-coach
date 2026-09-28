@@ -83,3 +83,24 @@ function pcName(pc, preferFlat) {
   const names = preferFlat ? NOTE_NAMES_FLAT : NOTE_NAMES_SHARP;
   return names[((pc % 12) + 12) % 12];
 }
+
+// Shifts a chord symbol's root (and slash-bass note, if any) by some
+// number of semitones, keeping everything else -- quality, extensions,
+// any parenthetical text -- exactly as written. Used to print a chart's
+// chord symbols the way a transposing instrument (e.g. Eb alto sax) would
+// actually read them, rather than only the underlying fingering diagram.
+function transposeSymbol(sym, semitones) {
+  if (!sym || !semitones) return sym;
+  return sym.replace(/([A-Ga-g])([#b]?)/g, (match, letter, accidental, offset, full) => {
+    // Only a root-note token -- the start of the string, or right after a
+    // '/' (a slash bass note) -- gets transposed; a quality letter like
+    // the "m" in "Cm7", or a word like "dim" that happens to start with a
+    // note letter, must stay untouched.
+    const isRootPosition = offset === 0 || full[offset - 1] === '/';
+    if (!isRootPosition) return match;
+    const pc = ROOT_PC[letter.toUpperCase() + accidental];
+    if (pc === undefined) return match;
+    const newPc = (((pc + semitones) % 12) + 12) % 12;
+    return pcName(newPc, accidental === 'b');
+  });
+}

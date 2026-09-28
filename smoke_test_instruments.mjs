@@ -1,10 +1,14 @@
 // Verifies the instrument selector: switching between Ukulele, Piano, and
 // Saxophone changes which chord-diagram the modal renders (fretboard,
 // keyboard, or a written-note list, since a monophonic instrument can't
-// show a voicing the way the other two do), that the choice persists
-// across a reload, and that the Metronome backing track doesn't error out
+// show a voicing the way the other two do); that Saxophone additionally
+// re-labels the chart's own chord symbols to what a real alto (Eb) horn
+// reads (not just the tap-to-see diagram), and switching back to
+// Ukulele/Piano restores the original symbols; that the choice persists
+// across a reload; and that the Metronome backing track doesn't error out
 // under any of the three (each instrument module supplies its own
-// chordFrequencies()).
+// chordFrequencies()) and stays in the song's actual key regardless of
+// what's displayed.
 import { chromium } from 'playwright-core';
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', headless: true });
@@ -22,8 +26,11 @@ const defaultInstrument = await page.$eval('#instrumentSelect', (el) => el.value
 console.log('default instrument:', defaultInstrument);
 if (defaultInstrument !== 'ukulele') throw new Error('Expected Ukulele to be the default instrument');
 
-async function openChordModalFor(text) {
-  await page.locator('.chord-sym', { hasText: new RegExp(`^${text}$`) }).first().click();
+// Selects by the underlying concert-pitch symbol (data-sym), not the
+// visible text -- Saxophone re-labels what's visible, so a text match
+// would silently stop finding "C" once that chord reads "A" on screen.
+async function openChordModalFor(originalSym) {
+  await page.locator(`.chord-sym[data-sym="${originalSym}"]`).first().click();
   await page.waitForTimeout(50);
 }
 
@@ -44,21 +51,28 @@ if (activeKeys < 3) throw new Error('Expected at least 3 highlighted piano keys 
 if (rootKeys !== 1) throw new Error('Expected exactly one key marked as the root');
 await page.click('#chordModal .chord-modal-backdrop', { position: { x: 5, y: 5 } });
 
-// --- Switch to Saxophone: per-note fingering diagrams, transposed for alto ---
+// --- Switch to Saxophone: the chart's own chord symbols re-label to a
+// real alto (Eb) horn's actual reading (a major 6th up), not just the
+// tap-to-see diagram -- concert C reads/fingers as A. ---
 await page.selectOption('#instrumentSelect', 'saxophone');
-await openChordModalFor('C');
-const toneCount = await page.locator('.sax-chord-tones .sax-chord-tone').count();
-const rootToneText = await page.locator('.sax-chord-tone-root .sax-chord-tone-written').first().textContent();
-const allWritten = await page.locator('.sax-chord-tone-written').allTextContents();
-console.log('Saxophone: chord tones shown:', toneCount, '| root (written):', rootToneText, '| all written notes:', allWritten);
-if (toneCount !== 3) throw new Error('Expected 3 chord tones (root/3rd/5th) for a C major triad');
-// Alto (Eb) is a famous, unambiguous reference point: concert C is written A.
-if (rootToneText.trim() !== 'A') throw new Error(`Expected alto's written root for concert C to be "A", got "${rootToneText}"`);
-if (!allWritten.includes('C#') || !allWritten.includes('E')) throw new Error(`Expected the 3rd/5th to transpose to C# and E, got ${allWritten.join(',')}`);
+const displayedForC = await page.locator('.chord-sym[data-sym="C"]').first().textContent();
+console.log('Saxophone: chart shows concert "C" as:', displayedForC);
+if (displayedForC !== 'A') throw new Error(`Expected the chart to relabel concert "C" to alto's written "A", got "${displayedForC}"`);
 
-// Each tone gets its own 6-key fingering diagram (from the Standard of
-// Excellence chart); the root (written A) is the simplest note on the
-// horn -- just the left index finger, one dot pressed out of six.
+// Tapping it opens the diagram for whatever's now actually printed on the
+// chart ("A"), fingered directly -- chart and diagram always agree.
+await openChordModalFor('C'); // still selected by the underlying concert symbol
+const toneCount = await page.locator('.sax-chord-tones .sax-chord-tone').count();
+const rootNoteText = await page.locator('.sax-chord-tone-root .sax-chord-tone-note').first().textContent();
+const allNotes = await page.locator('.sax-chord-tone-note').allTextContents();
+console.log('Saxophone: chord tones shown:', toneCount, '| root:', rootNoteText, '| all notes:', allNotes);
+if (toneCount !== 3) throw new Error('Expected 3 chord tones (root/3rd/5th) for a C major triad');
+if (rootNoteText.trim() !== 'A') throw new Error(`Expected the diagram's root to match what's printed on the chart ("A"), got "${rootNoteText}"`);
+if (!allNotes.includes('C#') || !allNotes.includes('E')) throw new Error(`Expected the 3rd/5th to read C# and E (alto's spelling of concert E/G), got ${allNotes.join(',')}`);
+
+// A's own fingering (LH1 alone, the simplest note on the horn) -- the
+// diagram looks this note up directly, with no further transposition of
+// its own (the chart already did that).
 const totalDots = await page.locator('.sax-key-dot').count();
 const rootDots = await page.locator('.sax-chord-tone-root .sax-key-dot').count();
 const rootPressed = await page.locator('.sax-chord-tone-root .sax-key-pressed').count();
@@ -67,23 +81,12 @@ if (totalDots !== toneCount * 6) throw new Error(`Expected 6 fingering dots per 
 if (rootDots !== 6 || rootPressed !== 1) throw new Error(`Expected written A's fingering to be exactly 1 pressed key of 6, got ${rootPressed}/${rootDots}`);
 await page.click('#chordModal .chord-modal-backdrop', { position: { x: 5, y: 5 } });
 
-// F# fingering (LH1,LH2,LH3,RH2 -- corrected against the reference chart,
-// not the RH-fully-open guess this originally shipped with). Concert A
-// major's root transposes to alto's written F#, but the loaded chart has
-// no "A" chord, so render it directly into a detached element instead of
-// clicking through the chart.
-const fSharpKeys = await page.evaluate(() => {
-  const div = document.createElement('div');
-  window.ChordsSaxophone.renderChordDiagram(div, 'A');
-  const root = div.querySelector('.sax-chord-tone-root');
-  return {
-    written: root.querySelector('.sax-chord-tone-written').textContent.trim(),
-    pressed: root.querySelectorAll('.sax-key-pressed').length,
-  };
-});
-console.log('Saxophone: "A" chord root fingering:', fSharpKeys);
-if (fSharpKeys.written !== 'F#') throw new Error(`Expected concert A's written root to be "F#", got "${fSharpKeys.written}"`);
-if (fSharpKeys.pressed !== 4) throw new Error(`Expected F# to press exactly 4 keys (LH1,LH2,LH3,RH2), got ${fSharpKeys.pressed}`);
+// --- Switching back to Ukulele restores the chart's original symbols ---
+await page.selectOption('#instrumentSelect', 'ukulele');
+const displayedAfterSwitchBack = await page.locator('.chord-sym[data-sym="C"]').first().textContent();
+console.log('Ukulele (after switching back): chart shows concert "C" as:', displayedAfterSwitchBack);
+if (displayedAfterSwitchBack !== 'C') throw new Error(`Expected switching back to Ukulele to restore the original "C" label, got "${displayedAfterSwitchBack}"`);
+await page.selectOption('#instrumentSelect', 'saxophone'); // leave it selected for the reload-persistence check below
 
 // --- The choice persists across a reload ---
 await page.reload();
@@ -92,17 +95,24 @@ const instrumentAfterReload = await page.$eval('#instrumentSelect', (el) => el.v
 console.log('instrument after reload:', instrumentAfterReload);
 if (instrumentAfterReload !== 'saxophone') throw new Error('Expected the selected instrument to persist across a reload');
 
-// --- Metronome backing track shouldn't error under the currently
-// selected instrument (saxophone, whose chordFrequencies() takes a
-// different, single-note shape than the other two). ---
+// --- A freshly-loaded chart also honors the persisted instrument choice ---
 await page.click('#railUpload');
 await page.fill('#songSearch', 'Amazing Grace');
 await page.keyboard.press('Enter');
 await page.waitForTimeout(200);
+const displayedAfterReload = await page.locator('.chord-sym[data-sym="C"]').first().textContent();
+console.log('Saxophone (after reload, fresh song load): chart shows concert "C" as:', displayedAfterReload);
+if (displayedAfterReload !== 'A') throw new Error(`Expected the freshly-rendered chart to already show the alto-transposed "A", got "${displayedAfterReload}"`);
+
+// --- Metronome backing track shouldn't error under the currently
+// selected instrument (saxophone, whose chordFrequencies() takes a
+// different, single-note shape than the other two), and should schedule
+// off the song's actual (concert) key regardless of what's displayed --
+// chordSymbolAt() reads data-sym, not the relabeled text. ---
 await page.click('#modeMetronomeBtn');
 await page.waitForTimeout(2000);
 await page.click('#stopBtn');
 
 if (errors.length) throw new Error('page errors: ' + errors.join('; '));
 await browser.close();
-console.log('OK: instrument selector switches the chord-diagram modal between fretboard/keyboard/written-note-list, persists across reload, and the backing track plays under every instrument without erroring');
+console.log('OK: instrument selector switches the chord-diagram modal between fretboard/keyboard/written-note-list, Saxophone also re-labels the chart itself to a real alto\'s reading (and switching away restores it), the choice persists across reload (chart included), and the backing track plays under every instrument, in the song\'s actual key, without erroring');

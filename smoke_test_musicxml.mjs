@@ -5,9 +5,11 @@
 // data in a ChordPro chord chart to reconstruct notation *from*, so this
 // is a genuinely different kind of "song". Also checks that it's still a
 // first-class citizen of the song library (browsable, loadable by title,
-// persists), that switching back to an ordinary chord chart restores the
-// normal chart/play-modes UI, and that the practice-mode controls are
-// hidden (not wired up to staff notation) while one is showing.
+// persists, badged "Notation" in the list so it's distinguishable from an
+// ordinary "Chords" chart at a glance), that switching back to an
+// ordinary chord chart restores the normal chart/play-modes UI, and that
+// the practice-mode controls are hidden (not wired up to staff notation)
+// while one is showing.
 import { chromium } from 'playwright-core';
 import path from 'node:path';
 import { isBenignTestEnvError } from './test_helpers.mjs';
@@ -54,6 +56,25 @@ console.log('song list:', listed);
 if (!listed.includes('Test Sheet Song') || !listed.includes('sample sheet')) {
   throw new Error('Both notated songs should be saved to the library and listed like any other song');
 }
+
+// --- The list badges each song by type, so it's obvious at a glance
+// which ones are real notation (read-only) vs. an ordinary chord chart. ---
+const badges = await page.locator('#songList .song-list-item').evaluateAll((els) =>
+  Object.fromEntries(els.map((el) => [el.dataset.title, el.querySelector('.song-list-item-type')?.textContent]))
+);
+console.log('badges:', badges);
+if (badges['Test Sheet Song'] !== 'Notation' || badges['sample sheet'] !== 'Notation') {
+  throw new Error(`Expected both notated songs badged "Notation", got ${JSON.stringify(badges)}`);
+}
+if (badges['Amazing Grace'] !== 'Chords') {
+  throw new Error(`Expected an ordinary chord chart badged "Chords", got "${badges['Amazing Grace']}"`);
+}
+const notationBadgeIsAccented = await page
+  .locator('#songList .song-list-item', { hasText: 'Test Sheet Song' })
+  .locator('.song-list-item-type')
+  .evaluate((el) => el.classList.contains('song-list-item-type-notation'));
+if (!notationBadgeIsAccented) throw new Error('The "Notation" badge should be visually distinct (accent color), not styled like "Chords"');
+
 await page.locator('#songList .song-list-item', { hasText: 'Test Sheet Song' }).click();
 await page.waitForTimeout(300);
 title = await page.textContent('#songTitle');
@@ -75,4 +96,4 @@ if (lineCount < 4) throw new Error('Expected the chord chart to actually re-rend
 
 if (errors.length) throw new Error('page errors: ' + errors.join('; '));
 await browser.close();
-console.log('OK: MusicXML/.mxl import renders real staff notation, stays part of the browsable song library, and switching back to a chord chart restores the normal practice UI');
+console.log('OK: MusicXML/.mxl import renders real staff notation, stays part of the browsable song library badged "Notation" (vs. "Chords" for an ordinary chart), and switching back to a chord chart restores the normal practice UI');

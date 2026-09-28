@@ -274,9 +274,15 @@
         line.chords.forEach((c) => {
           const span = document.createElement('span');
           span.className = 'chord-sym';
-          span.textContent = c.sym;
+          // The underlying (concert-pitch) symbol stays on the element as
+          // data -- chordSymbolAt() reads it for the backing track/scoring
+          // regardless of instrument -- while the visible text is whatever
+          // the current instrument wants read off the chart (e.g. Eb alto
+          // sax's own transposed spelling); see displayChordSym().
+          span.dataset.sym = c.sym;
+          span.textContent = displayChordSym(c.sym);
           span.style.left = c.offset + 'ch';
-          span.addEventListener('click', () => showChordDiagram(c.sym));
+          span.addEventListener('click', () => showChordDiagram(span.textContent));
           chordRow.appendChild(span);
         });
         if (!line.chords.length) chordRow.innerHTML = ' ';
@@ -345,9 +351,29 @@
 
   // ---------- Instrument selector ----------
 
+  // Whatever the current instrument wants the chart to actually read --
+  // Ukulele/Piano show the chord as written (no displaySymbol of their
+  // own), Saxophone re-labels it to a real alto (Eb) horn's own written
+  // note (see chords-saxophone.js) so the chart itself is what to read
+  // and finger, not just the tap-to-see diagram.
+  function displayChordSym(sym) {
+    const inst = currentInstrument();
+    return inst.displaySymbol ? inst.displaySymbol(sym) : sym;
+  }
+
+  // Re-labels every chord already on the chart in place after switching
+  // instruments -- cheaper than a full re-render, and preserves zoom/loop/
+  // scroll state, which a fresh renderSong() would otherwise reset.
+  function refreshChordSymbolDisplay() {
+    $('songView').querySelectorAll('.chord-sym').forEach((span) => {
+      span.textContent = displayChordSym(span.dataset.sym);
+    });
+  }
+
   $('instrumentSelect').value = currentInstrumentId;
   $('instrumentSelect').addEventListener('change', (e) => {
     setCurrentInstrument(e.target.value);
+    refreshChordSymbolDisplay();
   });
 
   $('chordModal').addEventListener('click', (e) => {
@@ -572,11 +598,15 @@
     return Math.floor((time - lineStartTimes[lineIdx]) / secondsPerBeat);
   }
 
+  // The underlying concert-pitch symbol, not whatever's currently
+  // displayed -- the backing track and Analyze Me scoring both key off
+  // this, and neither should shift key just because Saxophone re-labels
+  // the chart's own text for reading/fingering.
   function chordSymbolAt(lineIdx, chordIdx) {
     const line = flatLines[lineIdx];
     const chordEls = line ? line.querySelectorAll('.chord-sym') : [];
     if (!chordEls.length) return null;
-    return chordEls[Math.max(0, Math.min(chordIdx, chordEls.length - 1))].textContent;
+    return chordEls[Math.max(0, Math.min(chordIdx, chordEls.length - 1))].dataset.sym;
   }
 
   function highlightLoop() {
@@ -1136,15 +1166,20 @@
       list.innerHTML = '<li class="song-list-empty">No matching songs</li>';
       return;
     }
+    const songs = allAvailableSongs();
     list.innerHTML = matches
       .map((title) => {
         const esc = escapeHtml(title);
+        const notated = isNotatedSongText(songs[title] || '');
+        const badge = notated
+          ? '<span class="song-list-item-type song-list-item-type-notation" title="Real sheet music (MusicXML) -- read-only, not a chord chart">Notation</span>'
+          : '<span class="song-list-item-type" title="Chord chart -- chords over lyrics, all practice modes work">Chords</span>';
         let toggle = '';
         if (pl) {
           const inPlaylist = pl.songs.includes(title);
           toggle = `<button type="button" class="song-list-item-toggle${inPlaylist ? ' in-playlist' : ''}" data-title="${esc}" title="${inPlaylist ? 'Remove from' : 'Add to'} ${escapeHtml(pl.name)}">${inPlaylist ? '✓' : '+'}</button>`;
         }
-        return `<li class="song-list-item" role="option" data-title="${esc}"><span class="song-list-item-title">${esc}</span>${toggle}</li>`;
+        return `<li class="song-list-item" role="option" data-title="${esc}"><span class="song-list-item-title">${esc}</span>${badge}${toggle}</li>`;
       })
       .join('');
   }
